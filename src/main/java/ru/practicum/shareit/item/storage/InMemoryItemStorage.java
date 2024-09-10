@@ -133,12 +133,12 @@ public class InMemoryItemStorage implements ItemStorage {
      * @param userId Идентификатор пользователя.
      * @param item   Вещь, владелец которой проверяется.
      */
-    private void isOwnerCheck(Long userId, Item item) {
+    private void isOwnerCheck(long userId, Item item) {
         userStorage.findUserById(userId);
         log.debug("Проверка, является ли пользователь владельцем вещи. id владельца: {}, id вещи: {}",
                 userId, item.getId());
 
-        if (Objects.equals(userId, item.getOwner())) {
+        if (userId != item.getOwner()) {
             throw new NotFoundException("Пользователь не является владельцем.");
         }
     }
