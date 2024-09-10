@@ -43,7 +43,8 @@ public class InMemoryItemStorage implements ItemStorage {
     @Override
     public List<Item> findItemByOwnerId(Long id) {
         log.debug("Получен список вещей пользователя с id {}", id);
-        return new ArrayList<>(items.values().stream().filter(item -> item.getOwner() == id).toList());
+        return new ArrayList<>(items.values().stream()
+                .filter(item -> Objects.equals(item.getOwner(), id)).toList());
     }
 
     /**
@@ -56,7 +57,7 @@ public class InMemoryItemStorage implements ItemStorage {
     public Item findItemById(Long id) {
         return items.values()
                 .stream()
-                .filter(item -> item.getId() == id)
+                .filter(item -> Objects.equals(item.getId(), id))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundException(String.format("Фильм с id %d не найден", id)));
     }
@@ -113,7 +114,7 @@ public class InMemoryItemStorage implements ItemStorage {
      */
     @Override
     public void removeItemByOwnerId(Long ownerId) {
-        findItemByOwnerId(ownerId).stream().filter(item -> item.getOwner() == ownerId)
+        findItemByOwnerId(ownerId).stream().filter(item -> Objects.equals(item.getOwner(), ownerId))
                 .forEach(item -> removeItemById(item.getId()));
     }
 
@@ -132,11 +133,12 @@ public class InMemoryItemStorage implements ItemStorage {
      * @param userId Идентификатор пользователя.
      * @param item   Вещь, владелец которой проверяется.
      */
-    private void isOwnerCheck(long userId, Item item) {
+    private void isOwnerCheck(Long userId, Item item) {
         userStorage.findUserById(userId);
         log.debug("Проверка, является ли пользователь владельцем вещи. id владельца: {}, id вещи: {}",
                 userId, item.getId());
-        if (userId != item.getOwner()) {
+
+        if (Objects.equals(userId, item.getOwner())) {
             throw new NotFoundException("Пользователь не является владельцем.");
         }
     }
