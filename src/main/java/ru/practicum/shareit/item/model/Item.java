@@ -11,6 +11,7 @@ import lombok.Data;
 @Data
 @Builder
 public class Item {
+
     /**
      * Уникальный идентификатор вещи.
      */
