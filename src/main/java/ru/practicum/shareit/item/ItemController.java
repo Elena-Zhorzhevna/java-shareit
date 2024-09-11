@@ -14,7 +14,6 @@ import ru.practicum.shareit.item.service.ItemService;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Класс контроллера для управления объектами Item в приложении ShareIt.
@@ -53,7 +52,7 @@ public class ItemController {
      */
     @GetMapping("/{itemId}")
     @ResponseStatus(HttpStatus.OK)
-    public Optional<ItemDto> getItemById(@PathVariable("itemId") long itemId) {
+    public ItemDto getItemById(@PathVariable("itemId") long itemId) {
         log.info("Запрос на получение вещи id=" + itemId);
         return itemService.getItemById(itemId);
     }

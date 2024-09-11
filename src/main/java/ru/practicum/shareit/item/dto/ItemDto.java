@@ -9,13 +9,13 @@ import lombok.Data;
  */
 @Data
 public class ItemDto {
-    Long id;
+    private Long id;
     @NotNull
     @NotBlank
-    String name;
+    private String name;
     @NotNull
-    String description;
+    private String description;
     @NotNull
-    Boolean available;
-    String request;
+    private Boolean available;
+    private String request;
 }

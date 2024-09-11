@@ -13,15 +13,15 @@ public class User {
     /**
      * Уникальный идентификатор пользователя.
      */
-    Long id;
+    private Long id;
     /**
      * Имя или логин пользователя.
      */
-    String name;
+    private String name;
     /**
      * Адрес электронной почты пользователя /два пользователя не могут
      * иметь одинаковый адрес электронной почты/.
      */
     @Email
-    String email;
+    private String email;
 }

@@ -5,7 +5,6 @@ import ru.practicum.shareit.item.model.Item;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Интерфейс, в котором определены методы добавления, удаления и модификации объектов Item.
@@ -25,7 +24,7 @@ public interface ItemService {
     /**
      * Получение вещи по идентификатору.
      */
-    Optional<ItemDto> getItemById(Long id);
+    ItemDto getItemById(Long id);
 
     /**
      * Поиск вещей.

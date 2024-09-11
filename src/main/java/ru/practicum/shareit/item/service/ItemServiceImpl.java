@@ -3,6 +3,7 @@ package ru.practicum.shareit.item.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -11,7 +12,6 @@ import ru.practicum.shareit.user.service.UserService;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -61,9 +61,12 @@ public class ItemServiceImpl implements ItemService {
      * @return Вещь с указанным идентификатором.
      */
     @Override
-    public Optional<ItemDto> getItemById(Long id) {
+    public ItemDto getItemById(Long id) {
         Item item = itemStorage.findItemById(id);
-        return Optional.of(ItemMapper.mapToItemDto(item));
+        if (itemStorage.findItemById(id) == null) {
+            throw new NotFoundException(String.format("Вещь с id=%d не найдена", id));
+        }
+        return ItemMapper.mapToItemDto(item);
     }
 
     /**
