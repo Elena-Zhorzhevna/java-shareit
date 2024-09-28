@@ -8,6 +8,7 @@ import java.util.List;
 /**
  * Интерфейс, в котором определены методы добавления, удаления и модификации объектов Item.
  */
+@Deprecated
 public interface ItemStorage {
 
     /**

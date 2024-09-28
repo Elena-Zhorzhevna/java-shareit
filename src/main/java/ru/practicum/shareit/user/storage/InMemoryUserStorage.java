@@ -10,6 +10,7 @@ import java.util.*;
 /**
  * Имплементирует интерфейс UserStorage, содержит логику хранения, обновления и поиска объектов User.
  */
+@Deprecated
 @Slf4j
 @Component("inMemoryUserStorage")
 public class InMemoryUserStorage implements UserStorage {

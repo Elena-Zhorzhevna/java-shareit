@@ -1,4 +1,4 @@
-package ru.practicum.shareit.item;
+package ru.practicum.shareit.item.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -6,11 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-
-import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
-
 
 import java.util.Collection;
 import java.util.List;
@@ -23,6 +21,7 @@ import java.util.List;
 @RequestMapping("/items")
 public class ItemController {
     private static final String USER_ID_REQUEST_HEADER = "X-Sharer-User-Id";
+
     @Qualifier("itemServiceImpl")
     private final ItemService itemService;
 
@@ -39,7 +38,7 @@ public class ItemController {
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<ItemDto> getAllItemsFromUser(@RequestHeader("X-Sharer-User-Id") Long userId) {
+    public List<ItemDto> getAllItemsFromUser(@RequestHeader(USER_ID_REQUEST_HEADER) Long userId) {
         log.info("Получение списка всех вещей владельца с id: {}", userId);
         return itemService.getAllItemsByUserId(userId);
     }
@@ -53,7 +52,7 @@ public class ItemController {
     @GetMapping("/{itemId}")
     @ResponseStatus(HttpStatus.OK)
     public ItemDto getItemById(@PathVariable("itemId") long itemId) {
-        log.info("Запрос на получение вещи id=" + itemId);
+        log.info("Запрос на получение вещи id = " + itemId);
         return itemService.getItemById(itemId);
     }
 
@@ -78,7 +77,7 @@ public class ItemController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ItemDto create(@RequestHeader(value = USER_ID_REQUEST_HEADER) Long userId,
+    public ItemDto create(@RequestHeader(USER_ID_REQUEST_HEADER) Long userId,
                           @RequestBody @Valid ItemDto itemDto) {
         log.info("Запрос на добавление вещи пользователя id = " + userId);
         return itemService.addItem(userId, itemDto);
@@ -87,25 +86,25 @@ public class ItemController {
     /**
      * Обрабатывает PATCH-запрос на обновление вещи.
      *
-     * @param itemId  Идентификатор вещи.
-     * @param newItem Обновленная вещь.
+     * @param itemId     Идентификатор вещи.
+     * @param newItemDto Обновленная вещь.
      * @return Обновленная вещь в формате Dto
      */
     @PatchMapping("/{itemId}")
     @ResponseStatus(HttpStatus.OK)
-    public ItemDto update(@RequestHeader(value = USER_ID_REQUEST_HEADER) Long userId,
+    public ItemDto update(@RequestHeader(USER_ID_REQUEST_HEADER) Long userId,
                           @PathVariable Long itemId,
-                          @RequestBody Item newItem) {
+                          @RequestBody ItemDto newItemDto) {
         log.info("Запрос на обновление вещи id = " + itemId + " от пользователя id = " + userId);
-        return itemService.updateItem(userId, itemId, newItem);
+        return itemService.updateItem(userId, itemId, newItemDto);
     }
 
     /**
-     * Удаляет вещь по ее идентификатору.
+     * Удаление вещи по ее идентификатору.
      */
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.OK)
-    public void removeItemById(@RequestHeader(value = USER_ID_REQUEST_HEADER) Long userId,
+    public void removeItemById(@RequestHeader(USER_ID_REQUEST_HEADER) Long userId,
                                @PathVariable Long itemId) {
         log.info("Запрос на удаление вещи владельца c id: {}, id вещи: {}.", userId, itemId);
         itemService.removeItemById(userId, itemId);
@@ -116,8 +115,26 @@ public class ItemController {
      */
     @DeleteMapping()
     @ResponseStatus(HttpStatus.OK)
-    public void removeAllItemsByUser(@RequestHeader("X-Sharer-User-Id") long userId) {
+    public void removeAllItemsByUser(@RequestHeader(USER_ID_REQUEST_HEADER) long userId) {
         log.info("Запрос на удаление всех вещей пользователя c id: {}", userId);
         itemService.removeAllItemsByOwnerId(userId);
+    }
+
+    /**
+     * Добавление отзыва пользователем с указанным идентификатором для вещи с указанным идентификатором.
+     *
+     * @param commentDto Отзыв в формате ДТО.
+     * @param userId     Идентификатор пользователя.
+     * @param itemId     Идентификатор вещи.
+     * @return Отзыв пользователя.
+     */
+    @ResponseBody
+    @PostMapping("/{itemId}/comment")
+    public CommentDto createComment(@Valid @RequestBody CommentDto commentDto,
+                                    @PathVariable Long itemId,
+                                    @RequestHeader(USER_ID_REQUEST_HEADER) Long userId) {
+        log.info("Получен запрос на добавление комментария пользователем с id = {} для вещи с id = {}",
+                userId, itemId);
+        return itemService.createComment(commentDto, itemId, userId);
     }
 }
