@@ -40,18 +40,16 @@ public class ItemServiceImpl implements ItemService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
-    private final ItemMapper itemMapper;
 
     @Autowired
     public ItemServiceImpl(ItemRepository itemRepository, CommentRepository commentRepository,
-                           UserService userService, UserRepository userRepository, BookingRepository bookingRepository,
-                           ItemMapper itemMapper) {
+                           UserService userService, UserRepository userRepository,
+                           BookingRepository bookingRepository) {
         this.itemRepository = itemRepository;
         this.commentRepository = commentRepository;
         this.userService = userService;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
-        this.itemMapper = itemMapper;
     }
 
     /**
@@ -63,7 +61,7 @@ public class ItemServiceImpl implements ItemService {
     public Collection<ItemDto> getAll() {
         log.info("Запрос на получение всех вещей.");
         return itemRepository.findAll().stream()
-                .map(itemMapper::mapToItemDtoWithComments)
+                .map(ItemMapper::mapToItemDtoWithComments)
                 .toList();
     }
 
@@ -79,7 +77,7 @@ public class ItemServiceImpl implements ItemService {
                 () -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
 
         return itemRepository.findByOwnerId(userId).stream()
-                .map(itemMapper::mapToItemDtoWithComments)
+                .map(ItemMapper::mapToItemDtoWithComments)
                 .collect(toList());
     }
 
@@ -92,7 +90,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getItemById(Long itemId) {
         log.info("Попытка получить вещь с id = {}", itemId);
-        ItemDto dto = itemMapper.mapToItemDtoWithComments(itemRepository.findById(itemId)
+        ItemDto dto = ItemMapper.mapToItemDtoWithComments(itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена!")));
         dto.setComments(getCommentsByItemId(itemId));
         return dto;
@@ -142,7 +140,7 @@ public class ItemServiceImpl implements ItemService {
         if (userService.getUserById(userId) == null) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден!");
         }
-        ItemDto addingItem = itemMapper.mapToItemDtoWithComments(itemRepository.save(item));
+        ItemDto addingItem = ItemMapper.mapToItemDtoWithComments(itemRepository.save(item));
         addingItem.setComments(itemDto.getComments());
         return addingItem;
     }
@@ -176,7 +174,7 @@ public class ItemServiceImpl implements ItemService {
             oldItem.setAvailable(newItemDto.getAvailable());
         }
 
-        ItemDto newDto = itemMapper.mapToItemDtoWithComments(itemRepository.save(oldItem));
+        ItemDto newDto = ItemMapper.mapToItemDtoWithComments(itemRepository.save(oldItem));
         List<CommentDto> commentDtos = getCommentsByItemId(newItemDto.getId());
         newDto.setComments(commentDtos);
         return newDto;

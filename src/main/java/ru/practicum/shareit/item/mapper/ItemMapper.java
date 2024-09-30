@@ -1,13 +1,11 @@
 package ru.practicum.shareit.item.mapper;
 
-import org.springframework.stereotype.Component;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 
 /**
  * Класс для преобразования объектов типа Item в тип ItemDto и обратно.
  */
-@Component
 public class ItemMapper {
 
     public static Item mapItemDtoToItem(ItemDto itemDto) {
@@ -20,7 +18,7 @@ public class ItemMapper {
                 .build();
     }
 
-    public ItemDto mapToItemDtoWithComments(Item item) {
+    public static ItemDto mapToItemDtoWithComments(Item item) {
         ItemDto itemDto = new ItemDto();
         itemDto.setId(item.getId());
         itemDto.setName(item.getName());

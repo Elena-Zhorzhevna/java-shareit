@@ -11,9 +11,11 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
+import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.storage.UserRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserServiceImpl;
@@ -30,18 +32,16 @@ public class BookingServiceImpl implements BookingService {
     private final UserServiceImpl userService;
     private final ItemService itemService;
     private final ItemRepository itemRepository;
-    private final BookingMapper bookingMapper;
     private final UserRepository userRepository;
 
     @Autowired
     public BookingServiceImpl(BookingRepository bookingRepository, UserServiceImpl userService,
                               ItemService itemService, ItemRepository itemRepository,
-                              BookingMapper bookingMapper, UserRepository userRepository) {
+                              UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
         this.userService = userService;
         this.itemService = itemService;
         this.itemRepository = itemRepository;
-        this.bookingMapper = bookingMapper;
         this.userRepository = userRepository;
     }
 
@@ -63,9 +63,12 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("Вещь с id = " + bookingDtoToPut.getItemId() +
                     " не доступна для бронирования владельцем!");
         }
-        Booking bookingToCreate = bookingMapper.mapBookingDtoToPutToBooking(bookingDtoToPut, bookerId);
+        Booking bookingToCreate = BookingMapper.mapBookingDtoToPutToBooking(bookingDtoToPut);
+        bookingToCreate.setItem(ItemMapper.mapItemDtoToItem(itemService.getItemById(bookingDtoToPut.getItemId())));
+        bookingToCreate.setBooker(UserMapper.mapUserDtoToUser(userService.getUserById(bookerId)));
+
         Booking booking = bookingRepository.save(bookingToCreate);
-        return bookingMapper.mapToBookingDto(booking);
+        return BookingMapper.mapToBookingDto(booking);
     }
 
     /**
@@ -90,7 +93,7 @@ public class BookingServiceImpl implements BookingService {
         setBookingStatus(userId, booking, approved);
         booking.setId(bookingId);
         bookingRepository.save(booking);
-        return bookingMapper.mapToBookingDto(booking);
+        return BookingMapper.mapToBookingDto(booking);
     }
 
     /**
@@ -110,28 +113,27 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new NotFoundException("Бронирование с id =" + bookingId + " не найдено!"));
 
         if (booking.getBooker().getId().equals(userId) || booking.getItem().getOwner().getId().equals(userId)) {
-            return bookingMapper.mapToBookingDto(booking);
+            return BookingMapper.mapToBookingDto(booking);
         } else {
             throw new NotFoundException("Данные бронирования доступны только для владельца вещи или арендатора.");
         }
     }
 
     /**
-     *
-     * @param state Параметр state необязательный и по умолчанию равен ALL (англ. «все»).
-     *              Также он может принимать значения CURRENT (англ. «текущие»),
-     *              PAST (англ. «завершённые»),
-     *              FUTURE (англ. «будущие»),
-     *              WAITING (англ. «ожидающие подтверждения»),
-     *              REJECTED (англ. «отклонённые»).
+     * @param state  Параметр state необязательный и по умолчанию равен ALL (англ. «все»).
+     *               Также он может принимать значения CURRENT (англ. «текущие»),
+     *               PAST (англ. «завершённые»),
+     *               FUTURE (англ. «будущие»),
+     *               WAITING (англ. «ожидающие подтверждения»),
+     *               REJECTED (англ. «отклонённые»).
      * @param userId Идентификатор пользователя.
      * @return Список бронирований указанного пользователя с указанным параметром state.
      */
     @Override
     public List<BookingDto> getBookingsByUserIdWithState(String state, Long userId) {
-            if (state == null) {
-                state = "ALL";
-            }
+        if (state == null) {
+            state = "ALL";
+        }
         userService.getUserById(userId);
         List<BookingDto> bookings = getBookings(state, userId);
         return new ArrayList<>(bookings);
@@ -163,7 +165,7 @@ public class BookingServiceImpl implements BookingService {
             default -> throw new NotFoundException("Не найден параметр " + state);
         };
         return bookings.stream()
-                .map(bookingMapper::mapToBookingDto)
+                .map(BookingMapper::mapToBookingDto)
                 .collect(Collectors.toList());
     }
 
@@ -176,7 +178,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto getLastBooking(Long itemId) {
         Booking lastBooking = bookingRepository.getLastBookingForItem(itemId);
-        return bookingMapper.mapToBookingDto(lastBooking);
+        return BookingMapper.mapToBookingDto(lastBooking);
     }
 
     /**
@@ -188,7 +190,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto getNextBooking(Long itemId) {
         Booking nextBooking = bookingRepository.getNextBookingForItem(itemId);
-        return bookingMapper.mapToBookingDto(nextBooking);
+        return BookingMapper.mapToBookingDto(nextBooking);
     }
 
     /**
@@ -213,7 +215,7 @@ public class BookingServiceImpl implements BookingService {
         }
         List<Booking> bookings = findBookingsOfItemsWithState(itemIds, state);
         return bookings.stream()
-                .map(bookingMapper::mapToBookingDto)
+                .map(BookingMapper::mapToBookingDto)
                 .collect(Collectors.toList());
     }
 
@@ -245,7 +247,7 @@ public class BookingServiceImpl implements BookingService {
      * @param userId Идентификатор пользователя.
      */
     private User isUserExist(Long userId) {
-         User user = userRepository.findById(userId).orElseThrow(
+        User user = userRepository.findById(userId).orElseThrow(
                 () -> new NotFoundException("Пользователь с id = " + userId + " не найден.")
         );
         return user;
@@ -281,8 +283,9 @@ public class BookingServiceImpl implements BookingService {
 
     /**
      * Метод проверяет наличие статуса бронирования определенного пользователя.
-     * @param userId Идентификатор пользователя.
-     * @param booking Бронирование для проверки статуса.
+     *
+     * @param userId   Идентификатор пользователя.
+     * @param booking  Бронирование для проверки статуса.
      * @param approved Параметр, указывающий, подтверждено ли бронирование владельцем.
      */
     private void setBookingStatus(Long userId, Booking booking, Boolean approved) {
