@@ -2,17 +2,31 @@ package ru.practicum.shareit.item.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.storage.BookingRepository;
+import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.storage.CommentRepository;
+import ru.practicum.shareit.item.storage.ItemRepository;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
+import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.item.storage.InMemoryItemStorage;
+import ru.practicum.shareit.user.storage.UserRepository;
+import ru.practicum.shareit.user.mapper.UserMapper;
+import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.service.UserService;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Сервисный класс, который обрабатывает операции и взаимодействия, связанные с вещами.
@@ -21,13 +35,21 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ItemServiceImpl implements ItemService {
-    private final InMemoryItemStorage itemStorage;
+    private final ItemRepository itemRepository;
+    private final CommentRepository commentRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
 
     @Autowired
-    public ItemServiceImpl(InMemoryItemStorage itemStorage, UserService userService) {
-        this.itemStorage = itemStorage;
+    public ItemServiceImpl(ItemRepository itemRepository, CommentRepository commentRepository,
+                           UserService userService, UserRepository userRepository,
+                           BookingRepository bookingRepository) {
+        this.itemRepository = itemRepository;
+        this.commentRepository = commentRepository;
         this.userService = userService;
+        this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
     }
 
     /**
@@ -38,35 +60,40 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public Collection<ItemDto> getAll() {
         log.info("Запрос на получение всех вещей.");
-        return itemStorage.getAll().stream().map(ItemMapper::mapToItemDto).toList();
+        return itemRepository.findAll().stream()
+                .map(ItemMapper::mapToItemDtoWithComments)
+                .toList();
     }
 
     /**
-     * Получение всех вещей владельца.
+     * Получение всех вещей владельца по его идентификатору.
      *
      * @param userId Идентификатор пользователя - владельца вещей.
      * @return Список вещей владельца.
      */
     @Override
     public List<ItemDto> getAllItemsByUserId(Long userId) {
-        return itemStorage.findItemByOwnerId(userId).stream()
-                .map(ItemMapper::mapToItemDto)
-                .collect(Collectors.toList());
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
+
+        return itemRepository.findByOwnerId(userId).stream()
+                .map(ItemMapper::mapToItemDtoWithComments)
+                .collect(toList());
     }
 
     /**
-     * Получение вещи по идентификатору.
+     * Получение вещи по ее идентификатору.
      *
-     * @param id Идентификатор вещи.
+     * @param itemId Идентификатор вещи.
      * @return Вещь с указанным идентификатором.
      */
     @Override
-    public ItemDto getItemById(Long id) {
-        Item item = itemStorage.findItemById(id);
-        if (itemStorage.findItemById(id) == null) {
-            throw new NotFoundException(String.format("Вещь с id=%d не найдена", id));
-        }
-        return ItemMapper.mapToItemDto(item);
+    public ItemDto getItemById(Long itemId) {
+        log.info("Попытка получить вещь с id = {}", itemId);
+        ItemDto dto = ItemMapper.mapToItemDtoWithComments(itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена!")));
+        dto.setComments(getCommentsByItemId(itemId));
+        return dto;
     }
 
     /**
@@ -84,6 +111,7 @@ public class ItemServiceImpl implements ItemService {
             log.warn("Текст для поиска отсутствует");
             return List.of();
         }
+
         List<ItemDto> itemsDto = getAll().stream()
                 .filter(item -> item.getName().toLowerCase().contains(text.toLowerCase()) ||
                         item.getDescription().toLowerCase().contains(text.toLowerCase()))
@@ -105,27 +133,51 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public ItemDto addItem(Long userId, ItemDto itemDto) {
+        validateItemDto(itemDto);
         Item item = ItemMapper.mapItemDtoToItem(itemDto);
-        userService.getUserById(userId);
-        item.setOwner(userId);
-        Item itemResult = itemStorage.create(userId, item);
-        log.info("Добавлена вещь: \n{}", itemResult);
-        ItemDto itemResultDto = ItemMapper.mapToItemDto(itemResult);
-        log.info("Вещь в формате DTO: \n{}", itemResultDto);
-        return itemResultDto;
+
+        item.setOwner(UserMapper.mapUserDtoToUser(userService.getUserById(userId)));
+        if (userService.getUserById(userId) == null) {
+            throw new NotFoundException("Пользователь с id " + userId + " не найден!");
+        }
+        ItemDto addingItem = ItemMapper.mapToItemDtoWithComments(itemRepository.save(item));
+        addingItem.setComments(itemDto.getComments());
+        return addingItem;
     }
 
     /**
      * Обновление вещи.
      *
-     * @param userId  Идентификатор владельца.
-     * @param itemId  Идентификатор обновляемой вещи.
-     * @param newItem Вещь с обновленной информацией.
+     * @param userId     Идентификатор владельца.
+     * @param itemId     Идентификатор обновляемой вещи.
+     * @param newItemDto Вещь с обновленной информацией.
      * @return Обновленная вещь.
      */
     @Override
-    public ItemDto updateItem(Long userId, Long itemId, Item newItem) {
-        return ItemMapper.mapToItemDto(itemStorage.update(userId, itemId, newItem));
+    public ItemDto updateItem(Long userId, Long itemId, ItemDto newItemDto) {
+        userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
+
+        Item oldItem = (itemRepository.findById(itemId)).get();
+
+        if (!oldItem.getOwner().getId().equals(userId)) {
+            throw new NotFoundException("Пользователь не является владельцем вещи.!");
+        }
+
+        if (newItemDto.getName() != null) {
+            oldItem.setName(newItemDto.getName());
+        }
+        if (newItemDto.getDescription() != null) {
+            oldItem.setDescription(newItemDto.getDescription());
+        }
+        if (newItemDto.getAvailable() != null) {
+            oldItem.setAvailable(newItemDto.getAvailable());
+        }
+
+        ItemDto newDto = ItemMapper.mapToItemDtoWithComments(itemRepository.save(oldItem));
+        List<CommentDto> commentDtos = getCommentsByItemId(newItemDto.getId());
+        newDto.setComments(commentDtos);
+        return newDto;
     }
 
     /**
@@ -135,17 +187,131 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public void removeAllItemsByOwnerId(Long userId) {
-        itemStorage.removeItemByOwnerId(userId);
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь с id = " + userId + " не найден.")
+        );
+        itemRepository.removeItemByOwnerId(userId);
     }
 
     /**
      * Удаление вещи по идентификатору.
      *
-     * @param userId Идентификатор владельца вещи.
      * @param itemId Идентификатор удаляемой вещи.
+     * @param userId Идентификатор пользователя - владельца вещи.
      */
     @Override
-    public void removeItemById(Long userId, Long itemId) {
-        itemStorage.removeItemById(itemId);
+    public void removeItemById(Long itemId, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь с id = " + userId + " не найден.")
+        );
+        Item item = itemRepository.findById(itemId).orElseThrow(
+                () -> new NotFoundException("Вещь id = " + itemId + " не найдена.")
+        );
+        if (!item.getOwner().getId().equals(userId)) {
+            throw new ValidationException("Пользователь не является владельцем вещи.");
+        }
+        itemRepository.removeItemByIdAndOwnerId(itemId, userId);
+    }
+
+    /**
+     * Создания отзыва для вещи.
+     *
+     * @param commentDto Отзыв в формате Дто.
+     * @param itemId     Идентификатор вещи.
+     * @param userId     Идентификатор пользователя.
+     * @return Добавленный отзыв.
+     */
+    @Override
+    public CommentDto createComment(CommentDto commentDto, Long itemId, Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
+
+        isItemBooker(userId, itemId);
+        Item item = itemRepository.findById(itemId).get();
+        if (commentDto == null) {
+            throw new NotFoundException("Комментарий отсутствует");
+        }
+        if (commentDto.getText().isBlank()) {
+            throw new NotFoundException("Текст комментария отсутствует.");
+        }
+
+        final Booking booking = bookingRepository.getAllByBookerId(userId).stream()
+                .filter(b -> b.getItem().getId().equals(itemId))
+                .filter(b -> b.getStatus().equals(Status.APPROVED))
+                .findFirst()
+                .orElseThrow(() -> new ValidationException("Бронирование вещи не подверждено, " +
+                        "нельзя добавить комментарий."));
+
+        checkBookingEndTime(booking);
+
+        Comment comment = new Comment();
+        comment.setItem(item);
+        comment.setAuthor(user);
+        comment.setText(commentDto.getText());
+        comment.setCreated(LocalDateTime.now());
+        return CommentMapper.mapToCommentDto(commentRepository.save(comment));
+    }
+
+    /**
+     * Метод получения комментариев вещи по ее идентификатору.
+     *
+     * @param itemId Идентификатор вещи.
+     * @return Список комментариев в формате ДТО.
+     */
+    @Override
+    public List<CommentDto> getCommentsByItemId(Long itemId) {
+        return commentRepository.findAllByItemId(itemId,
+                        Sort.by(Sort.Direction.DESC, "created")).stream()
+                .map(CommentMapper::mapToCommentDto)
+                .collect(toList());
+    }
+
+    /**
+     * Метод для валидации объекта ItemDto
+     *
+     * @param itemDto Объект для проверки валидации.
+     */
+    private void validateItemDto(ItemDto itemDto) throws ValidationException {
+
+        if (itemDto.getName() == null || itemDto.getName().isBlank()) {
+            throw new ValidationException("Отсутствует название вещи.");
+        }
+        if (itemDto.getDescription() == null || itemDto.getDescription().isBlank()) {
+            throw new ValidationException("Отсутствует описание вещи.");
+        }
+        if (itemDto.getAvailable() == null) {
+            throw new ValidationException("Не указана доступность вещи для заказа.");
+        }
+    }
+
+    /**
+     * Метод для проверки, является ли пользователь арендатором вещи.
+     *
+     * @param userId Идентификатор пользователя.
+     * @param itemId Идентификатор вещи.
+     * @return Результат проверки true/false.
+     */
+    private Boolean isItemBooker(Long userId, Long itemId) {
+        List<Booking> bookings = bookingRepository.getAllByBookerId(userId);
+        if (bookings.isEmpty()) {
+            return false;
+        }
+        for (Booking b : bookings) {
+            if (b.getItem().getId().equals(itemId) && b.getStart().isBefore(LocalDateTime.now())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Метод для проверки факта, что бронирование вещи завершено на настоящий момент.
+     *
+     * @param booking Бронирование вещи.
+     */
+    private void checkBookingEndTime(Booking booking) {
+        if (booking.getEnd().isAfter(LocalDateTime.now())) {
+            throw new ValidationException("Бронирование вещи еще не завершено.");
+        }
     }
 }

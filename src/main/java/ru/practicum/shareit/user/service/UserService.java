@@ -17,7 +17,7 @@ public interface UserService {
     /**
      * Получение пользователя по айди.
      */
-    UserDto getUserById(long userId);
+    UserDto getUserById(Long userId);
 
     /**
      * Добавление пользователя.

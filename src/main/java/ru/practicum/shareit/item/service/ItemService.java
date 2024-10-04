@@ -1,7 +1,7 @@
 package ru.practicum.shareit.item.service;
 
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.model.Item;
 
 import java.util.Collection;
 import java.util.List;
@@ -39,7 +39,7 @@ public interface ItemService {
     /**
      * Обновление вещи.
      */
-    ItemDto updateItem(Long userId, Long itemId, Item newItem);
+    ItemDto updateItem(Long userId, Long itemId, ItemDto newItemDto);
 
     /**
      * Удаление всех вещей определенного пользователя.
@@ -50,4 +50,14 @@ public interface ItemService {
      * Удаление вещи по ее идентификатору.
      */
     void removeItemById(Long userId, Long itemId);
+
+    /**
+     * Добавление отзыва.
+     */
+    CommentDto createComment(CommentDto commentDto, Long itemId, Long userId);
+
+    /**
+     * Получение всех отзывов о вещи, идентификатор которой указан.
+     */
+     List<CommentDto> getCommentsByItemId(Long itemId);
 }

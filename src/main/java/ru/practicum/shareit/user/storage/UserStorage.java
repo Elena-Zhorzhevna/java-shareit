@@ -7,6 +7,7 @@ import java.util.Collection;
 /**
  * Интерфейс, в котором определены методы добавления, удаления и модификации объектов User.
  */
+@Deprecated
 public interface UserStorage {
 
     /**

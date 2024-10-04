@@ -3,16 +3,16 @@ package ru.practicum.shareit.user.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.user.storage.UserRepository;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
-import ru.practicum.shareit.user.storage.UserStorage;
 
 import java.util.Collection;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service(("userServiceImpl"))
 public class UserServiceImpl implements UserService {
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
 
     @Autowired
-    public UserServiceImpl(UserStorage userStorage) {
-        this.userStorage = userStorage;
+    public UserServiceImpl(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     /**
@@ -35,8 +35,9 @@ public class UserServiceImpl implements UserService {
      * @return Коллекция пользователей.
      */
     @Override
+    @Transactional(readOnly = true)
     public Collection<UserDto> getAllUsers() {
-        return userStorage.findAll()
+        return userRepository.findAll()
                 .stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
@@ -50,14 +51,10 @@ public class UserServiceImpl implements UserService {
      */
 
     @Override
-    public UserDto getUserById(long id) {
+    public UserDto getUserById(Long id) {
         log.info("Попытка получить пользователя с id={}", id);
-        User user = userStorage.findUserById(id);
-        if (userStorage.findUserById(id) == null) {
-            throw new NotFoundException(String.format("Пользователь с id=%d не найден", id));
-        }
-        log.info("Пользователь с id = {} получен.", id);
-        return UserMapper.mapToUserDto(user);
+        return UserMapper.mapToUserDto(userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + " не найден!")));
     }
 
     /**
@@ -72,7 +69,7 @@ public class UserServiceImpl implements UserService {
             throw new ValidationException("Электронная почта не должна быть пустой.");
         }
         emailValidation(user.getEmail());
-        return UserMapper.mapToUserDto(userStorage.create(user));
+        return UserMapper.mapToUserDto(userRepository.save(user));
     }
 
     /**
@@ -83,13 +80,22 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public UserDto updateUser(Long userId, UserDto newUserDto) {
-        User userToUpdate = userStorage.findUserById(userId);
+        if (newUserDto.getId() == null) {
+            newUserDto.setId(userId);
+        }
+        User userToUpdate = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден!"));
         emailValidation(newUserDto.getEmail());
-        log.info("Пользователь до изменения: \n{}", userToUpdate);
-        Optional.ofNullable(newUserDto.getName()).ifPresent(userToUpdate::setName);
-        Optional.ofNullable(newUserDto.getEmail()).ifPresent(userToUpdate::setEmail);
+
+        if (newUserDto.getName() != null) {
+            userToUpdate.setName(newUserDto.getName());
+        }
+
+        if (newUserDto.getEmail() != null) {
+            userToUpdate.setEmail(newUserDto.getEmail());
+        }
         log.info("Обновлённый пользователь: \n{}", userToUpdate);
-        UserDto newDto = UserMapper.mapToUserDto(userStorage.update(userToUpdate));
+        UserDto newDto = UserMapper.mapToUserDto(userRepository.save(userToUpdate));
         log.info("Обновлённый пользователь в формате DTO: \n{}", newDto);
         return newDto;
     }
@@ -99,7 +105,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void removeAllUsers() {
-        userStorage.removeAllUsers();
+        userRepository.deleteAll();
     }
 
     /**
@@ -107,7 +113,8 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void removeUserById(Long userId) {
-        userStorage.removeUserById(userId);
+        getUserById(userId);
+        userRepository.deleteById(userId);
     }
 
     /**
@@ -116,8 +123,8 @@ public class UserServiceImpl implements UserService {
      * @param email Электронная почта пользователя.
      */
     private void emailValidation(String email) {
-        if (!userStorage.findAll().stream().filter(oldUser -> oldUser.getEmail().equals(email)).toList().isEmpty()) {
-            log.warn("Ошибка. Пользователь с email: {} уже существует.", email);
+        if (!userRepository.findAll().stream().filter(oldUser -> oldUser.getEmail().equals(email)).toList().isEmpty()) {
+            log.warn("Пользователь с email: {} уже существует.", email);
             throw new ConflictException("Пользователь с email: " + email + " уже существует.");
         }
     }
