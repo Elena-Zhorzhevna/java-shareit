@@ -15,6 +15,8 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     void removeItemByIdAndOwnerId(Long itemId, Long userId);
 
+    List<Item> findAllByRequestId(Long requestId);
+
     @Query(" select i from Item i " +
             "where lower(i.name) like lower(concat('%', :search, '%')) " +
             " or lower(i.description) like lower(concat('%', :search, '%')) " +

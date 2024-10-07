@@ -9,6 +9,7 @@ import ru.practicum.shareit.booking.storage.BookingRepository;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
+
 import ru.practicum.shareit.item.storage.CommentRepository;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -17,6 +18,9 @@ import ru.practicum.shareit.item.mapper.CommentMapper;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Comment;
 import ru.practicum.shareit.item.model.Item;
+
+import ru.practicum.shareit.request.service.ItemRequestService;
+
 import ru.practicum.shareit.user.storage.UserRepository;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
@@ -40,16 +44,19 @@ public class ItemServiceImpl implements ItemService {
     private final UserService userService;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
+    private final ItemRequestService requestService;
 
     @Autowired
     public ItemServiceImpl(ItemRepository itemRepository, CommentRepository commentRepository,
                            UserService userService, UserRepository userRepository,
-                           BookingRepository bookingRepository) {
+                           BookingRepository bookingRepository, ItemRequestService requestService) {
         this.itemRepository = itemRepository;
         this.commentRepository = commentRepository;
         this.userService = userService;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
+        this.requestService = requestService;
+
     }
 
     /**
@@ -133,6 +140,8 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public ItemDto addItem(Long userId, ItemDto itemDto) {
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new NotFoundException("Пользователь с таким Id " + userId + " не найден"));
         validateItemDto(itemDto);
         Item item = ItemMapper.mapItemDtoToItem(itemDto);
 
@@ -140,6 +149,10 @@ public class ItemServiceImpl implements ItemService {
         if (userService.getUserById(userId) == null) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден!");
         }
+        if (itemDto.getRequestId() != null) {
+            requestService.addItemToRequest(itemDto);
+        }
+
         ItemDto addingItem = ItemMapper.mapToItemDtoWithComments(itemRepository.save(item));
         addingItem.setComments(itemDto.getComments());
         return addingItem;

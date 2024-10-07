@@ -56,5 +56,6 @@ public class Item {
     /**
      * Идентификатор запроса другого пользователя, с которым может быть связана вещь.
      */
+    @Column(name = "request_id")
     private Long requestId;
 }
