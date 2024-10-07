@@ -1,15 +1,13 @@
 package ru.practicum.shareit.request.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
-import ru.practicum.shareit.item.dto.ItemDto;
-import ru.practicum.shareit.item.dto.ItemNameDto;
+import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -38,5 +36,5 @@ public class ItemRequestDto {
     /**
      * Список ответов в формате: id вещи, название, id владельца.
      */
-    private List<ItemNameDto> items;
+    private Collection<Item> items;
 }

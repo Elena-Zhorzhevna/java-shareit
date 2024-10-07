@@ -1,5 +1,6 @@
 package ru.practicum.shareit.item.storage;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +16,7 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     void removeItemByIdAndOwnerId(Long itemId, Long userId);
 
-    List<Item> findAllByRequestId(Long requestId);
+    List<Item> findAllByRequestId(Long requestId, Sort id);
 
     @Query(" select i from Item i " +
             "where lower(i.name) like lower(concat('%', :search, '%')) " +

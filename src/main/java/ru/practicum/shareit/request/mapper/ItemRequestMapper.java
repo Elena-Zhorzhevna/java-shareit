@@ -4,6 +4,7 @@ import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.user.model.User;
 
+import java.util.ArrayList;
 
 /**
  * Класс для преобразования объектов типа ItemRequest в тип ItemRequestDto и обратно.
@@ -16,6 +17,7 @@ public class ItemRequestMapper {
                 .description(itemRequestDto.getDescription())
                 .requester(requester)
                 .created(itemRequestDto.getCreated())
+                .items(new ArrayList<>())
                 .build();
     }
 
@@ -25,6 +27,7 @@ public class ItemRequestMapper {
                 .description(itemRequest.getDescription())
                 .requester(itemRequest.getRequester())
                 .created(itemRequest.getCreated())
+                .items(itemRequest.getItems())
                 .build();
     }
 }

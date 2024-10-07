@@ -8,6 +8,7 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.model.User;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -50,5 +51,5 @@ public class ItemRequest {
     @ToString.Exclude
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "request_id", referencedColumnName = "id")
-    private Collection<Item> items;
+    private Collection<Item> items = new ArrayList<>();
 }
