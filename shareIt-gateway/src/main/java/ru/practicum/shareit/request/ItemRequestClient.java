@@ -34,7 +34,7 @@ public class ItemRequestClient extends BaseClient {
         return get("/all", userId);
     }
 
-    public ResponseEntity<Object> getItemRequestsById(Long requestId) {
-        return get("/%d".formatted(requestId));
+    public ResponseEntity<Object> getItemRequestById(Long requestId, Long userId) {
+        return get("/" + requestId, userId);
     }
 }

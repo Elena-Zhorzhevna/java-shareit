@@ -1,13 +1,12 @@
 package ru.practicum.shareit.request.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.springframework.validation.annotation.Validated;
 
-@Setter
-@Getter
+@Data
+@Builder
+@Validated
 @NoArgsConstructor
 @AllArgsConstructor
 public class ItemRequestDto {

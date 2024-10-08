@@ -26,9 +26,9 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<Object> getUserById(@PathVariable(value = "userId") Long userId) {
+    public ResponseEntity<Object> getUserById(@PathVariable Long userId) {
         log.info("Получение пользователя по id " + userId);
-        return userClient.getUserById(userId);
+        return userClient.getById(userId);
     }
 
     @GetMapping
@@ -40,7 +40,7 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}")
-    public ResponseEntity<Object> update(@Valid @RequestBody UserDto userDto,
+    public ResponseEntity<Object> update(@RequestBody UserDto userDto,
                                          @PathVariable(value = "userId") Long userId) {
         log.info("Запрос на обновление пользователя с id = {}", userId);
         final ResponseEntity<Object> user = userClient.update(userId, userDto);

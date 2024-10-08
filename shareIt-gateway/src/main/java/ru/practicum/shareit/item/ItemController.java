@@ -67,7 +67,7 @@ public class ItemController {
                                                 @PathVariable(name = "itemId") Long itemId,
                                                 @RequestHeader(value = "X-Sharer-User-Id") Long userId) {
         log.info("Запрос на добавления отзыва для вещи с id = {}", itemId);
-        final ResponseEntity<Object> comment = itemClient.createComment(itemId, userId, commentDto);
+        final ResponseEntity<Object> comment = itemClient.createComment(commentDto, itemId, userId);
         log.info("Добавлен отзыв на вещь с id = {}", itemId);
         return comment;
     }

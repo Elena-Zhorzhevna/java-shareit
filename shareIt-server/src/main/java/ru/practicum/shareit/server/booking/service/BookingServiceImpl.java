@@ -90,7 +90,7 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("Пользователь id = " + userId + " не явлется владельцем  вещи с id = "
                     + item.getId());
         }
-        setBookingStatus(userId, booking, approved);
+        setBookingStatus(booking, approved);
         booking.setId(bookingId);
         bookingRepository.save(booking);
         return BookingMapper.mapToBookingDto(booking);
@@ -284,11 +284,11 @@ public class BookingServiceImpl implements BookingService {
     /**
      * Метод проверяет наличие статуса бронирования определенного пользователя.
      *
-     * @param userId   Идентификатор пользователя.
+
      * @param booking  Бронирование для проверки статуса.
      * @param approved Параметр, указывающий, подтверждено ли бронирование владельцем.
      */
-    private void setBookingStatus(Long userId, Booking booking, Boolean approved) {
+    private void setBookingStatus(Booking booking, Boolean approved) {
         if (Status.APPROVED.equals(booking.getStatus())) {
             throw new ValidationException("Статус аренды уже подтвержден");
         }

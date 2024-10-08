@@ -130,7 +130,7 @@ public class ItemController {
      */
     @ResponseBody
     @PostMapping("/{itemId}/comment")
-    public CommentDto createComment(@Valid @RequestBody CommentDto commentDto,
+    public CommentDto createComment(@RequestBody CommentDto commentDto,
                                     @PathVariable Long itemId,
                                     @RequestHeader(USER_ID_REQUEST_HEADER) Long userId) {
         log.info("Получен запрос на добавление комментария пользователем с id = {} для вещи с id = {}",
