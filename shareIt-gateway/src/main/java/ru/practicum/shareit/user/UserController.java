@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.user.dto.UserDto;
 
 @Controller
-@RequestMapping(path = "/bookings")
+@RequestMapping(path = "/users")
 @RequiredArgsConstructor
 @Slf4j
 @Validated
