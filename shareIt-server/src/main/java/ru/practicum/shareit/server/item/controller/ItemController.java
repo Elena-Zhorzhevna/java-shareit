@@ -51,7 +51,7 @@ public class ItemController {
      */
     @GetMapping("/{itemId}")
     @ResponseStatus(HttpStatus.OK)
-    public ItemDto getItemById(@PathVariable("itemId") long itemId) {
+    public ItemDto getItemById(@PathVariable("itemId") Long itemId) {
         log.info("Запрос на получение вещи id = " + itemId);
         return itemService.getItemById(itemId);
     }

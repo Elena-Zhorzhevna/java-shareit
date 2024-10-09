@@ -9,6 +9,7 @@ import ru.practicum.shareit.server.booking.dto.BookingDto;
 import ru.practicum.shareit.server.booking.dto.BookingDtoToPut;
 import ru.practicum.shareit.server.booking.model.Booking;
 import ru.practicum.shareit.server.booking.model.Status;
+import ru.practicum.shareit.server.exception.InvalidRequestException;
 import ru.practicum.shareit.server.exception.NotFoundException;
 import ru.practicum.shareit.server.exception.ValidationException;
 import ru.practicum.shareit.server.item.mapper.ItemMapper;
@@ -63,6 +64,7 @@ public class BookingServiceImpl implements BookingService {
             throw new NotFoundException("Вещь с id = " + bookingDtoToPut.getItemId() +
                     " не доступна для бронирования владельцем!");
         }
+        timeIntersectionsCheck(bookingDtoToPut, bookingDtoToPut.getItemId());
         Booking bookingToCreate = BookingMapper.mapBookingDtoToPutToBooking(bookingDtoToPut);
         bookingToCreate.setItem(ItemMapper.mapItemDtoToItem(itemService.getItemById(bookingDtoToPut.getItemId())));
         bookingToCreate.setBooker(UserMapper.mapUserDtoToUser(userService.getUserById(bookerId)));
@@ -81,15 +83,12 @@ public class BookingServiceImpl implements BookingService {
      */
     public BookingDto update(Long bookingId, Long userId, Boolean approved) {
 
-        userRepository.findById(userId).orElseThrow(
-                () -> new ValidationException("Пользователь с id = " + userId + " не найден."));
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new InvalidRequestException("Пользователь с id = " + userId + " не найден."));
 
         Booking booking = BookingMapper.mapToBooking(getBookingById(bookingId, userId));
-        Item item = booking.getItem();
-        if (!userId.equals(item.getOwner().getId())) {
-            throw new NotFoundException("Пользователь id = " + userId + " не явлется владельцем  вещи с id = "
-                    + item.getId());
-        }
+
+        isItemOwner(booking.getItem().getId(), booking.getItem().getOwner().getId());
         setBookingStatus(booking, approved);
         booking.setId(bookingId);
         bookingRepository.save(booking);
@@ -296,6 +295,16 @@ public class BookingServiceImpl implements BookingService {
             booking.setStatus(Status.APPROVED);
         } else {
             booking.setStatus(Status.REJECTED);
+        }
+    }
+
+    private void timeIntersectionsCheck(BookingDtoToPut bookingDtoToPut, Long itemId) {
+        final List<Booking> bookings = bookingRepository.findBookingByItemId(itemId);
+        if (bookings.stream()
+                .anyMatch(booking -> (!bookingDtoToPut.getStart().isAfter(booking.getEnd())
+                        && !bookingDtoToPut.getEnd().isBefore(booking.getStart())))) {
+            log.warn("Вещь с id {} находится в аренде.", itemId);
+            throw new InvalidRequestException(String.format("Вещь с id = %d находится в аренде.", itemId));
         }
     }
 

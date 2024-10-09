@@ -1,5 +1,6 @@
 package ru.practicum.shareit.server.item.service;
 
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.shareit.server.booking.model.Booking;
 import ru.practicum.shareit.server.booking.storage.BookingRepository;
 import ru.practicum.shareit.server.booking.model.Status;
+import ru.practicum.shareit.server.exception.InvalidRequestException;
 import ru.practicum.shareit.server.exception.NotFoundException;
 import ru.practicum.shareit.server.exception.ValidationException;
 
@@ -28,6 +30,7 @@ import ru.practicum.shareit.server.user.service.UserService;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -233,10 +236,11 @@ public class ItemServiceImpl implements ItemService {
      * @param userId     Идентификатор пользователя.
      * @return Добавленный отзыв.
      */
+    //@Transactional
     @Override
     public CommentDto createComment(CommentDto commentDto, Long itemId, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
-                () -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
+                () -> new InvalidRequestException("Пользователь с id = " + userId + " не найден."));
 
         isItemBooker(userId, itemId);
         Item item = itemRepository.findById(itemId).get();
@@ -262,6 +266,23 @@ public class ItemServiceImpl implements ItemService {
         comment.setText(commentDto.getText());
         comment.setCreated(LocalDateTime.now());
         return CommentMapper.mapToCommentDto(commentRepository.save(comment));
+
+        /*
+    @Override
+    @Transactional
+    public CommentDto createComment(Long itemId, Long userId, NewCommentDto newCommentDto) {
+        log.debug("Started checking contains user with userId {} in method createComment", userId);
+        final User user = checkUserIsContained(userId);
+        final Item item = checkItemIsContained(itemId);
+        final List<Booking> booking = bookingRepository
+                .findBookingByBookerIdAndItemIdAndStatus(userId, itemId, Status.APPROVED);
+        checkEndTime(booking);
+        log.debug("Finished checking contains user with userId {} in method createComment", userId);
+        final Comment comment = CommentMapper.toComment(item, user, newCommentDto);
+        return CommentMapper.toCommentDto(commentRepository.save(comment));
+    }
+         */
+
     }
 
     /**
@@ -326,4 +347,8 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("Бронирование вещи еще не завершено.");
         }
     }
-}
+   /* private void checkBookingEndTime(List<Booking> booking) {
+        if (!booking.stream().anyMatch(booking1 -> booking1.getEnd().isBefore(LocalDateTime.now()))) {
+            throw new ValidationException("End time is after now time");
+        }*/
+    }

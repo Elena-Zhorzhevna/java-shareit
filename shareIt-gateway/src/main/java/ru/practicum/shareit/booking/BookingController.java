@@ -37,8 +37,19 @@ public class BookingController {
 	public ResponseEntity<Object> bookItem(@RequestHeader("X-Sharer-User-Id") Long userId,
 										   @RequestBody @Valid BookingDto bookingDto) {
 		log.info("Creating booking {}, userId={}", bookingDto, userId);
-		return bookingClient.createBooking(userId, bookingDto);
+		return bookingClient.createBooking(bookingDto, userId);
 	}
+
+	@PatchMapping("/{bookingId}")
+	public ResponseEntity<Object> update(@PathVariable(value = "bookingId") Long bookingId,
+										 @RequestHeader(value = "X-Sharer-User-Id") Long userId,
+										 @RequestParam(value = "approved") Boolean approved) {
+		log.info("Запрос на обновление статуса бронирования.");
+		final ResponseEntity<Object> booking = bookingClient.updateBooking(bookingId, userId, approved);
+		log.info("Статус бронирования обновлен.");
+		return booking;
+	}
+
 
 	@GetMapping("/{bookingId}")
 	public ResponseEntity<Object> getBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
@@ -54,12 +65,5 @@ public class BookingController {
 		BookingState state = BookingState.from(stateParam)
 				.orElseThrow(() -> new IllegalArgumentException("Unknown state: " + stateParam));
 		return bookingClient.getAllBookingsByOwner(userId, state);
-	}
-
-	@PatchMapping("/{bookingId}")
-	public ResponseEntity<Object> approveOrRejectBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
-														 @PathVariable Long bookingId,
-														 @RequestParam Boolean approved) {
-		return bookingClient.approveOrRejectBooking(userId, bookingId, approved);
 	}
 }

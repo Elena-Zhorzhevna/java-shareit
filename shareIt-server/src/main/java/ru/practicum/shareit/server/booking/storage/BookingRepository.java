@@ -91,4 +91,5 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             "order by b.start desc " +
             "limit 1")
     Booking getLastBookingForItem(Long itemId);
+    List<Booking> findBookingByItemId(Long itemId);
 }
