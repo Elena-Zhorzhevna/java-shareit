@@ -57,4 +57,11 @@ public class ItemDto {
      * Список отзывов вещи.
      */
     private List<CommentDto> comments;
+
+    public ItemDto(Long id, String name, String description, Long requestId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.requestId = requestId;
+    }
 }

@@ -52,4 +52,11 @@ public class ItemRequest {
     @OneToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "request_id", referencedColumnName = "id")
     private Collection<Item> items = new ArrayList<>();
+
+    public ItemRequest(Long id, String description, User requester, LocalDateTime created) {
+        this.id = id;
+        this.description = description;
+        this.requester = requester;
+        this.created = created;
+    }
 }

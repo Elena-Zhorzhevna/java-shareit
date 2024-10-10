@@ -18,6 +18,7 @@ import ru.practicum.shareit.server.request.dto.ItemRequestDto;
 import ru.practicum.shareit.server.request.mapper.ItemRequestMapper;
 import ru.practicum.shareit.server.request.model.ItemRequest;
 import ru.practicum.shareit.server.request.storage.ItemRequestRepository;
+import ru.practicum.shareit.server.user.dto.UserDto;
 import ru.practicum.shareit.server.user.mapper.UserMapper;
 import ru.practicum.shareit.server.user.model.User;
 import ru.practicum.shareit.server.user.service.UserService;
@@ -51,19 +52,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     }
 
     /**
-     * Получение всех запросов пользователя.
-     *
-     * @return Коллекция запросов.
-     */
-/*    @Override
-    public Collection<ItemRequestDto> getAll() {
-        log.info("Получение всех запросов пользователя.");
-        return itemRequestRepository.findAll().stream()
-                .map(ItemRequestMapper::mapToItemRequestDto)
-                .toList();
-    }*/
-
-    /**
      * Получение всех запросов пользователя, чей идентификатор указан.
      *
      * @param userId Идентификатор пользователя.
@@ -86,7 +74,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
      * @param itemRequestDto Запрос вещи в формате ДТО.
      * @return Добавленный запрос на вещь.
      */
-    @Override
+   @Override
     public ItemRequestDto addItemRequest(Long userId, ItemRequestDto itemRequestDto) {
         validateItemRequestDto(itemRequestDto);
         ItemRequest itemRequest = ItemRequestMapper.mapToItemRequest(itemRequestDto, itemRequestDto.getRequester());
@@ -101,6 +89,23 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         addingItemRequest.setItems(itemRequestDto.getItems());
         return addingItemRequest;
     }
+
+/*    @Override
+    public ItemRequestDto addItemRequest(Long userId, ItemRequestDto itemRequestDto) {
+        validateItemRequestDto(itemRequestDto);
+
+        // Сохраняем результат первого вызова
+        UserDto requesterDto = userService.getUserById(userId);
+        ItemRequest itemRequest = ItemRequestMapper.mapToItemRequest(itemRequestDto,
+                UserMapper.mapUserDtoToUser(requesterDto));
+        itemRequest.setCreated(LocalDateTime.now());
+        itemRequest.setRequester(UserMapper.mapUserDtoToUser(requesterDto));
+
+        ItemRequestDto addingItemRequest = ItemRequestMapper.mapToItemRequestDto(itemRequestRepository.save(itemRequest));
+        addingItemRequest.setItems(itemRequestDto.getItems());
+
+        return addingItemRequest;
+    }*/
 
     @Override
     public ItemRequestDto getItemRequestById(Long itemRequestId, Long userId) {

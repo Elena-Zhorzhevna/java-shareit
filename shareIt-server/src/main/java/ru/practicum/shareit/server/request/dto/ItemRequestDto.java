@@ -1,7 +1,9 @@
 package ru.practicum.shareit.server.request.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.practicum.shareit.server.item.model.Item;
 import ru.practicum.shareit.server.user.model.User;
 
@@ -14,6 +16,8 @@ import java.util.Collection;
  * запросах вещей пользователями.
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class ItemRequestDto {
     /**
