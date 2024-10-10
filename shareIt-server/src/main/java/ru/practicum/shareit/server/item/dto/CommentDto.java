@@ -1,9 +1,7 @@
 package ru.practicum.shareit.server.item.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 import ru.practicum.shareit.server.item.model.Item;
 
 import java.time.LocalDateTime;
@@ -13,6 +11,7 @@ import java.time.LocalDateTime;
  */
 @Builder
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class CommentDto {
     /**
@@ -41,4 +40,11 @@ public class CommentDto {
      * Дата создания комментария.
      */
     private LocalDateTime created;
+
+    public CommentDto(Long id, String text, Item item, String authorName) {
+        this.id = id;
+        this.text = text;
+        this.item = item;
+        this.authorName = authorName;
+    }
 }
