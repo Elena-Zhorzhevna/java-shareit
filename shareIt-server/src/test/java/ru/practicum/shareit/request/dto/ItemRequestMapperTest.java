@@ -15,7 +15,7 @@ public class ItemRequestMapperTest {
 
     @Test
     public void testMapToItemRequest() {
-        // Arrange
+
         User requester = new User();
         requester.setId(1L);
         requester.setName("RequesterName");

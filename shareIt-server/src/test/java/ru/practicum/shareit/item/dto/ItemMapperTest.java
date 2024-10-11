@@ -28,7 +28,6 @@ public class ItemMapperTest {
 
     @Test
     void mapToItemDtoWithComments_ShouldMapFieldsCorrectly() {
-        // Arrange
         Item item = new Item();
         item.setId(1L);
         item.setName("Item1");

@@ -155,40 +155,6 @@ public class ItemRequestControllerTest {
         verify(itemRequestService).getItemRequestById(itemRequestId, userId);
     }
 
-
-/*    @Test
-    void getAllRequests_ValidUserIdAndNoPagination_ReturnsRequests() throws Exception {
-        Long userId = 1L;
-        ItemRequestDto itemRequestDto1 = new ItemRequestDto();
-        itemRequestDto1.setDescription("Request 1");
-
-        ItemRequestDto itemRequestDto2 = new ItemRequestDto();
-        itemRequestDto2.setDescription("Request 2");
-
-        when(itemRequestService.getAllRequests(userId, null, null)).thenReturn(List.of(itemRequestDto1, itemRequestDto2));
-
-        mockMvc.perform(get("/requests/all")
-                        .header("X-Sharer-User-Id", userId))
-                .andExpect(status().isOk())
-                .andExpect(content().json(objectMapper.writeValueAsString(List.of(itemRequestDto1, itemRequestDto2))));
-
-        verify(itemRequestService).getAllRequests(userId, null, null);
-    }*/
-
-/*    @Test
-    void getAllRequests_NonExistentUser_ReturnsEmptyList() throws Exception {
-        Long userId = 9L;
-
-        when(itemRequestService.getAllRequests(userId, null, null)).thenReturn(new ArrayList<>());
-
-        mockMvc.perform(get("/requests/all")
-                        .header("X-Sharer-User-Id", userId))
-                .andExpect(status().isOk())
-                .andExpect(content().json("[]"));
-
-        verify(itemRequestService).getAllRequests(userId, null, null);
-    }*/
-
     @Test
     void getAllRequests_ValidUserIdWithPagination_ReturnsRequests() throws Exception {
         Long userId = 1L;

@@ -174,9 +174,17 @@ public class BookingServiceImpl implements BookingService {
      * @param itemId Идентификатор вещи.
      * @return Бронирование в формате Дто.
      */
+  /*  @Override
+    public BookingDto getLastBooking(Long itemId) {
+        Booking lastBooking = bookingRepository.getLastBookingForItem(itemId);
+        return BookingMapper.mapToBookingDto(lastBooking);
+    }*/
     @Override
     public BookingDto getLastBooking(Long itemId) {
         Booking lastBooking = bookingRepository.getLastBookingForItem(itemId);
+        if (lastBooking == null) {
+            throw new NotFoundException("Не найдено последнее бронирование для вещи с id = " + itemId);
+        }
         return BookingMapper.mapToBookingDto(lastBooking);
     }
 
@@ -189,6 +197,9 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto getNextBooking(Long itemId) {
         Booking nextBooking = bookingRepository.getNextBookingForItem(itemId);
+        if (nextBooking == null) {
+            throw new NotFoundException("Не найдено следующее бронирование для вещи с id = " + itemId);
+        }
         return BookingMapper.mapToBookingDto(nextBooking);
     }
 

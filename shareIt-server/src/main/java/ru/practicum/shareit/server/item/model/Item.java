@@ -66,4 +66,12 @@ public class Item {
         this.available = available;
         this.owner = owner;
     }
+
+
+    public Item(String name, String description, Boolean available, User owner) {
+        this.name = name;
+        this.description = description;
+        this.available = available;
+        this.owner = owner;
+    }
 }

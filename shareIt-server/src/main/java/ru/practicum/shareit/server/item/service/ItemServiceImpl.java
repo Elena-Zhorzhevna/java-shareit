@@ -266,23 +266,6 @@ public class ItemServiceImpl implements ItemService {
         comment.setText(commentDto.getText());
         comment.setCreated(LocalDateTime.now());
         return CommentMapper.mapToCommentDto(commentRepository.save(comment));
-
-        /*
-    @Override
-    @Transactional
-    public CommentDto createComment(Long itemId, Long userId, NewCommentDto newCommentDto) {
-        log.debug("Started checking contains user with userId {} in method createComment", userId);
-        final User user = checkUserIsContained(userId);
-        final Item item = checkItemIsContained(itemId);
-        final List<Booking> booking = bookingRepository
-                .findBookingByBookerIdAndItemIdAndStatus(userId, itemId, Status.APPROVED);
-        checkEndTime(booking);
-        log.debug("Finished checking contains user with userId {} in method createComment", userId);
-        final Comment comment = CommentMapper.toComment(item, user, newCommentDto);
-        return CommentMapper.toCommentDto(commentRepository.save(comment));
-    }
-         */
-
     }
 
     /**
