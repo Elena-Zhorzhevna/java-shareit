@@ -42,12 +42,11 @@ public class BookingClient extends BaseClient {
 
     public ResponseEntity<Object> createBooking(BookingDto bookingDto, Long userId) {
         return post("", userId, bookingDto);
-
-
     }
+
     public ResponseEntity<Object> updateBooking(Long bookingId, Long userId, Boolean approved) {
         Map<String, Object> param = Map.of("approved", approved);
-        return patch("/"+ bookingId + "?approved={approved}", userId, param, null);
+        return patch("/" + bookingId + "?approved={approved}", userId, param, null);
     }
 
     public ResponseEntity<Object> getBookingById(long userId, Long bookingId) {

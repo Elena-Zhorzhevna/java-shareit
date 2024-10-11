@@ -25,8 +25,8 @@ public class ItemClient extends BaseClient {
                 .build());
     }
 
-    public ResponseEntity<Object> createItem(Long ownerId, ItemDto ItemDto) {
-        return post("", ownerId, ItemDto);
+    public ResponseEntity<Object> createItem(Long ownerId, ItemDto itemDto) {
+        return post("", ownerId, itemDto);
     }
 
     public ResponseEntity<Object> updateItem(Long itemId, Long userId, ItemDto newItemDto) {

@@ -1,4 +1,5 @@
 package ru.practicum.shareit.booking;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,6 +70,7 @@ public class BookingServiceTest {
         booking = new Booking(1L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2), item, owner,
                 Status.WAITING);
     }
+
     @Test
     void getBookingsByUserIdWithState_ValidRequest_ReturnsBookingsList() {
         // Мокаем поведение userRepository
