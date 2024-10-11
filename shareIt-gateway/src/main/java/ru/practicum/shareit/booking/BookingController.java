@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingState;
+import ru.practicum.shareit.exception.InvalidRequestException;
 
 
 @Controller
@@ -37,6 +38,9 @@ public class BookingController {
 	public ResponseEntity<Object> bookItem(@RequestHeader("X-Sharer-User-Id") Long userId,
 										   @RequestBody @Valid BookingDto bookingDto) {
 		log.info("Creating booking {}, userId={}", bookingDto, userId);
+		if (!bookingDto.getEnd().isAfter(bookingDto.getStart())) {
+			throw new InvalidRequestException("End date must be after start date");
+		}
 		return bookingClient.createBooking(bookingDto, userId);
 	}
 
