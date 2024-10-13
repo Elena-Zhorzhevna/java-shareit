@@ -22,7 +22,6 @@ import ru.practicum.shareit.server.user.storage.UserRepository;
 import ru.practicum.shareit.server.user.model.User;
 import ru.practicum.shareit.server.user.service.UserServiceImpl;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -406,7 +405,7 @@ public class BookingServiceImpl implements BookingService {
      *
      * @param booking Бронирование.
      */
-    private void checkBookingDates(Booking booking) {
+/*    private void checkBookingDates(Booking booking) {
         if (booking.getEnd().isBefore(LocalDateTime.now())) {
             throw new ValidationException("Время бронирования уже истекло.");
         }
@@ -416,5 +415,5 @@ public class BookingServiceImpl implements BookingService {
         if (booking.getEnd().isBefore(booking.getStart()) || booking.getStart().isEqual(booking.getEnd())) {
             throw new ValidationException("Неверно указаны даты начала и окончания бронирования.");
         }
-    }
+    } */
 }

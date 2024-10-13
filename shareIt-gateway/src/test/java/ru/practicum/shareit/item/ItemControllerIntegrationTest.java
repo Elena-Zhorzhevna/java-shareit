@@ -53,6 +53,18 @@ class ItemControllerIntegrationTest {
 
     @SneakyThrows
     @Test
+    void createItem_whenInvalidRequest_thenReturnStatusIsBadRequest() {
+        ItemDto itemDto = new ItemDto("", "Item Description", true);
+
+        mockMvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(itemDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @SneakyThrows
+    @Test
     void updateItem_whenValidRequest_thenReturnStatusIsOk() {
         ItemDto newItemDto = new ItemDto("Updated Item Name", "Updated Item Description", true);
 
@@ -69,6 +81,23 @@ class ItemControllerIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Updated Item Name"));
     }
 
+/*
+    @SneakyThrows
+    @Test
+    void updateItem_whenItemNotFound_thenReturnStatusIsNotFound() {
+        ItemDto newItemDto = new ItemDto("Updated Item Name", "Updated Item Description", true);
+
+        when(itemClient.updateItem(eq(1L), eq(1L), any(ItemDto.class)))
+                .thenThrow(new InvalidRequestException("Item not found"));
+
+        mockMvc.perform(patch("/items/{itemId}", 1L)
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(newItemDto)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Item not found"));
+    }
+*/
 
     @SneakyThrows
     @Test

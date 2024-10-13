@@ -14,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.client.MockRestServiceServer;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
@@ -210,7 +208,8 @@ class ItemClientTest {
         mockServer.expect(requestTo(serverUrl + "/%d/comment".formatted(itemId)))
                 .andExpect(method(HttpMethod.POST))
                 .andRespond(withStatus(HttpStatus.BAD_REQUEST)
-                        .body("{\"error\":\"Ошибка валидации\", \"message\":\"Комментарий не может быть пустым\"}")
+                        .body("{\"error\":\"Ошибка валидации\", " +
+                                "\"message\":\"Комментарий не может быть пустым\"}")
                         .contentType(MediaType.APPLICATION_JSON));
 
         ResponseEntity<Object> responseEntity = itemClient.createComment(invalidCommentDto, itemId, userId);
@@ -245,7 +244,8 @@ class ItemClientTest {
         mockServer.expect(requestTo(serverUrl + "/%d".formatted(itemId)))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.NOT_FOUND)
-                        .body("{\"error\":\"Пользователь не найден\", \"message\":\"Нет элемента с таким ID\"}")
+                        .body("{\"error\":\"Пользователь не найден\", " +
+                                "\"message\":\"Нет элемента с таким ID\"}")
                         .contentType(MediaType.APPLICATION_JSON));
 
         ResponseEntity<Object> responseEntity = itemClient.getItemById(itemId, userId);
@@ -263,7 +263,8 @@ class ItemClientTest {
         mockServer.expect(requestTo(serverUrl + "/search?text=%s".formatted(search)))
                 .andExpect(method(HttpMethod.GET))
                 .andRespond(withStatus(HttpStatus.NOT_FOUND)
-                        .body("{\"error\":\"Не найдено\", \"message\":\"Нет элементов по запросу\"}")
+                        .body("{\"error\":\"Не найдено\", " +
+                                "\"message\":\"Нет элементов по запросу\"}")
                         .contentType(MediaType.APPLICATION_JSON));
 
         ResponseEntity<Object> responseEntity = itemClient.getBySearch(userId, search);
@@ -271,4 +272,5 @@ class ItemClientTest {
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
         assertNotNull(responseEntity.getBody());
     }
+
 }

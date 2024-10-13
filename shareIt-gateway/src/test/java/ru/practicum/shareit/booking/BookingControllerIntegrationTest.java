@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingResponseDto;
 
@@ -189,7 +190,8 @@ class BookingControllerIntegrationTest {
                 .andExpect(content().string("mocked bookings response"));
     }
 
-/*    @SneakyThrows
+/*
+    @SneakyThrows
     @Test
     void getBookings_whenUnknownState_thenReturnBadRequest() {
         long userId = 1L;
@@ -201,6 +203,7 @@ class BookingControllerIntegrationTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").value("Unknown state: unknown"));
     }*/
+
 
     @SneakyThrows
     @Test
@@ -218,7 +221,8 @@ class BookingControllerIntegrationTest {
                 .andExpect(content().string("mocked owner bookings response"));
     }
 
-/*    @SneakyThrows
+/*
+    @SneakyThrows
     @Test
     void getAllBookingsByOwner_whenUnknownState_thenReturnBadRequest() {
         long userId = 1L;
@@ -229,7 +233,9 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(result ->
                         assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
-    }*/
+    }
+*/
+
 
     @SneakyThrows
     @Test

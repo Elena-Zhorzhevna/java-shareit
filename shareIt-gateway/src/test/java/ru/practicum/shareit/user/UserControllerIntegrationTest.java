@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.exception.InvalidStateException;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
@@ -45,7 +46,6 @@ class UserControllerIntegrationTest {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userDto)))
-                //.andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("John Doe"))
@@ -61,7 +61,6 @@ class UserControllerIntegrationTest {
                 .thenReturn(ResponseEntity.ok(userDto));
 
         mockMvc.perform(get("/users/{userId}", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("John Doe"))
@@ -77,7 +76,6 @@ class UserControllerIntegrationTest {
                 .thenReturn(ResponseEntity.ok(userDtos));
 
         mockMvc.perform(get("/users"))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].name").value("John Doe"))
@@ -96,7 +94,6 @@ class UserControllerIntegrationTest {
         mockMvc.perform(patch("/users/{userId}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updatedUserDto)))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("Jane Doe"))
@@ -110,7 +107,21 @@ class UserControllerIntegrationTest {
                 .thenReturn(ResponseEntity.ok().build());
 
         mockMvc.perform(delete("/users/{userId}", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk());
+    }
+
+    @SneakyThrows
+    @Test
+    void getUserById_whenNotFound_thenReturnError() {
+        Long userId = 1L;
+
+        when(userClient.getById(userId))
+                .thenThrow(new InvalidStateException());
+
+        mockMvc.perform(get("/users/{userId}", userId))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error").value("Некорректный тип запроса"))
+                .andExpect(jsonPath("$.description").value("Invalid type of state"));
     }
 }
