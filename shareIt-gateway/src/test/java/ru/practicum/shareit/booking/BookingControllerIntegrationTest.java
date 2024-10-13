@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BookingController.class)
@@ -51,7 +51,7 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(bookingDto)))
-                .andDo(print())
+                //.andDo(print())
                 .andExpect(status().isOk());
     }
 
@@ -74,7 +74,6 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
-                .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.itemId").value(1L))
@@ -94,7 +93,7 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
-                .andDo(print())
+                //.andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").value("Ошибка валидации"));
@@ -113,7 +112,7 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
-                .andDo(print())
+                //.andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").value("Ошибка валидации"))
@@ -132,7 +131,7 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(patch("/bookings/{bookingId}", bookingId)
                         .header("X-Sharer-User-Id", 1L)
                         .param("approved", String.valueOf(approved)))
-                .andDo(print())
+               //.andDo(print())
                 .andExpect(status().isOk());
 
         verify(bookingClient).updateBooking(eq(bookingId), eq(1L), eq(approved));
@@ -161,7 +160,7 @@ class BookingControllerIntegrationTest {
 
         mockMvc.perform(get("/bookings/{bookingId}", bookingId)
                         .header("X-Sharer-User-Id", 1L))
-                .andDo(print())
+                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(bookingId))

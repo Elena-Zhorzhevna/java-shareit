@@ -61,4 +61,27 @@ public class ItemMapperTest {
         assertEquals(item.getRequestId(), itemNameDto.getRequestId());
         assertEquals(item.getOwner(), itemNameDto.getOwner());
     }
+
+    @Test
+    void testMapItemNameDtoToItem() {
+        Long id = 1L;
+        String name = "Test Item";
+        Long requestId = 2L;
+        User owner = new User();
+        owner.setId(3L);
+
+        ItemNameDto itemNameDto = ItemNameDto.builder()
+                .id(id)
+                .name(name)
+                .requestId(requestId)
+                .owner(owner)
+                .build();
+
+        Item item = ItemMapper.mapItemNameDtoToItem(itemNameDto);
+
+        assertEquals(id, item.getId());
+        assertEquals(name, item.getName());
+        assertEquals(requestId, item.getRequestId());
+        assertEquals(owner, item.getOwner());
+    }
 }

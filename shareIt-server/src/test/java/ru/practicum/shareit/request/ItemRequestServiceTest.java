@@ -182,7 +182,8 @@ public class ItemRequestServiceTest {
         Long userId = 777L;
         Long itemRequestId = 10L;
 
-        when(userService.getUserById(userId)).thenThrow(new NotFoundException("Пользователь с id = " + userId + " не найден!"));
+        when(userService.getUserById(userId)).thenThrow(new NotFoundException("Пользователь с id = " + userId
+                + " не найден!"));
 
         assertThrows(NotFoundException.class, () -> itemRequestService.getItemRequestById(itemRequestId, userId));
 

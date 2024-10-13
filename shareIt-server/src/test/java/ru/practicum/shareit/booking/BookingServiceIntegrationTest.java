@@ -60,7 +60,7 @@ public class BookingServiceIntegrationTest {
     public void setUp() {
         itemRepository.deleteAll();
         userRepository.deleteAll();
-        bookingRepository.deleteAll(); // Сброс данных перед каждым тестом
+        bookingRepository.deleteAll();
         Long itemId = 3L;
 
         // Создаем владельца
@@ -74,19 +74,16 @@ public class BookingServiceIntegrationTest {
         item = itemService.addItem(item.getOwner().getId(), item);
     }
 
-   @Test
+    @Test
     public void testCreateBooking() {
-        // Создаем предмет
-        itemService.addItem(owner.getId(), item); // Сохраняем предмет
+        itemService.addItem(owner.getId(), item);
 
-        // Проверка, что предмет доступен
         assertThat(itemService.getItemById(item.getId()).getAvailable()).isTrue();
 
-        // Создаем бронирование
         BookingDtoToPut bookingDto = new BookingDtoToPut();
         bookingDto.setItemId(item.getId());
-        bookingDto.setStart(LocalDateTime.now().plusDays(1)); // Дата начала через день
-        bookingDto.setEnd(LocalDateTime.now().plusDays(2));   // Дата окончания через два дня
+        bookingDto.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(2));
 
         // Создаем бронирование и проверяем его
         BookingDto createdBooking = bookingService.create(bookingDto, booker.getId());
@@ -99,14 +96,13 @@ public class BookingServiceIntegrationTest {
     @Test
     public void testCreateBooking_WhenItemNotAvailable_ShouldThrowInvalidRequestException() {
         itemService.addItem(owner.getId(), item);
-        // Создаем первое бронирование
+
         BookingDtoToPut bookingDto1 = new BookingDtoToPut();
         bookingDto1.setItemId(item.getId());
         bookingDto1.setStart(LocalDateTime.now().plusDays(1));
         bookingDto1.setEnd(LocalDateTime.now().plusDays(2));
         bookingService.create(bookingDto1, booker.getId());
 
-        // Пытаемся создать второе бронирование для того же предмета, что должно выбросить исключение
         BookingDtoToPut bookingDto2 = new BookingDtoToPut();
         bookingDto2.setItemId(item.getId());
         bookingDto2.setStart(LocalDateTime.now().plusDays(1));
@@ -117,12 +113,11 @@ public class BookingServiceIntegrationTest {
 
     @Test
     public void testCreateBooking_WhenBookerIsOwner_ShouldThrowNotFoundException() {
-        // Создаем предмет
+
         Long itemId = 1L;
         ItemDto item = new ItemDto(itemId, "ItemName", "Description", owner, true);
-        itemService.addItem(owner.getId(), item); // Сохраняем предмет
+        itemService.addItem(owner.getId(), item);
 
-        // Пытаемся создать бронирование владельцем
         BookingDtoToPut bookingDto = new BookingDtoToPut();
         bookingDto.setItemId(itemId);
         bookingDto.setStart(LocalDateTime.now().plusDays(1));
@@ -162,67 +157,56 @@ public class BookingServiceIntegrationTest {
 
     @Test
     public void testGetLastBooking() {
-        //ItemDto item = new ItemDto(itemId, "ItemName", "Description", owner, true);
         itemService.addItem(owner.getId(), item); // Сохраняем предмет
 
-        // Создаем первое бронирование (в прошлом, чтобы оно считалось завершенным)
         BookingDtoToPut bookingDto1 = new BookingDtoToPut();
         bookingDto1.setItemId(item.getId());
-        bookingDto1.setStart(LocalDateTime.now().minusDays(2)); // Дата начала два дня назад
-        bookingDto1.setEnd(LocalDateTime.now().minusDays(1));   // Дата окончания один день назад
+        bookingDto1.setStart(LocalDateTime.now().minusDays(2));
+        bookingDto1.setEnd(LocalDateTime.now().minusDays(1));
 
         BookingDto createdBooking1 = bookingService.create(bookingDto1, booker.getId());
 
-        // Проверяем, что первое бронирование успешно создано
         assertThat(createdBooking1).isNotNull();
         assertThat(createdBooking1.getItem().getId()).isEqualTo(item.getId());
         assertThat(createdBooking1.getBooker().getId()).isEqualTo(booker.getId());
 
-        // Создаем второе бронирование (в будущем, чтобы оно не конфликтовало)
         BookingDtoToPut bookingDto2 = new BookingDtoToPut();
         bookingDto2.setItemId(item.getId());
-        bookingDto2.setStart(LocalDateTime.now().plusDays(1)); // Дата начала через день
-        bookingDto2.setEnd(LocalDateTime.now().plusDays(2));   // Дата окончания через два дня
+        bookingDto2.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto2.setEnd(LocalDateTime.now().plusDays(2));
 
         BookingDto createdBooking2 = bookingService.create(bookingDto2, booker.getId());
 
-        // Проверяем, что второе бронирование успешно создано
         assertThat(createdBooking2).isNotNull();
         assertThat(createdBooking2.getItem().getId()).isEqualTo(item.getId());
         assertThat(createdBooking2.getBooker().getId()).isEqualTo(booker.getId());
 
-        // Теперь получаем последнее бронирование
         BookingDto lastBooking = bookingService.getLastBooking(item.getId());
 
-        // Проверяем, что последнее бронирование - это то, которое мы создали первым
         assertThat(lastBooking).isNotNull();
         assertThat(lastBooking.getId()).isEqualTo(createdBooking1.getId());
     }
 
     @Test
     public void testGetNextBooking() {
-        // Создаем предмет
         Long itemId = item.getId();
 
-        // Создаем прошедшее бронирование
         BookingDtoToPut bookingDto1 = new BookingDtoToPut();
         bookingDto1.setItemId(itemId);
-        bookingDto1.setStart(LocalDateTime.now().minusDays(2)); // Начало в прошлом
-        bookingDto1.setEnd(LocalDateTime.now().minusDays(1));   // Окончание в прошлом
+        bookingDto1.setStart(LocalDateTime.now().minusDays(2));
+        bookingDto1.setEnd(LocalDateTime.now().minusDays(1));
         bookingService.create(bookingDto1, booker.getId());
 
-        // Создаем текущее бронирование
         BookingDtoToPut bookingDto2 = new BookingDtoToPut();
         bookingDto2.setItemId(itemId);
-        bookingDto2.setStart(LocalDateTime.now().plusDays(1)); // Начало через день
-        bookingDto2.setEnd(LocalDateTime.now().plusDays(2));   // Окончание через два дня
+        bookingDto2.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto2.setEnd(LocalDateTime.now().plusDays(2));
         BookingDto createdBooking2 = bookingService.create(bookingDto2, booker.getId());
 
-        // Создаем следующее бронирование
         BookingDtoToPut bookingDto3 = new BookingDtoToPut();
         bookingDto3.setItemId(itemId);
-        bookingDto3.setStart(LocalDateTime.now().plusDays(3)); // Начало через три дня
-        bookingDto3.setEnd(LocalDateTime.now().plusDays(4));   // Окончание через четыре дня
+        bookingDto3.setStart(LocalDateTime.now().plusDays(3));
+        bookingDto3.setEnd(LocalDateTime.now().plusDays(4));
         BookingDto createdBooking3 = bookingService.create(bookingDto3, booker.getId());
 
         BookingDto nextBooking = bookingService.getNextBooking(itemId);
@@ -241,8 +225,8 @@ public class BookingServiceIntegrationTest {
 
         List<BookingDto> bookings = bookingService.getBookingsByUserIdWithState("ALL", booker.getId());
 
-        assertThat(bookings).isNotNull(); // Проверяем, что список не равен null
-        assertThat(bookings.size()).isGreaterThan(0); // Проверяем, что размер списка равен 1
+        assertThat(bookings).isNotNull();
+        assertThat(bookings.size()).isGreaterThan(0);
     }
 
     @Test
@@ -255,7 +239,7 @@ public class BookingServiceIntegrationTest {
 
         List<BookingDto> ownerBookings = bookingService.getBookingsOfOwnerItems(owner.getId(), "ALL");
 
-        assertThat(ownerBookings).isNotNull(); // Проверяем, что список не равен null
-        assertThat(ownerBookings.size()).isGreaterThan(0); // Проверяем, что размер списка равен 1
+        assertThat(ownerBookings).isNotNull();
+        assertThat(ownerBookings.size()).isGreaterThan(0);
     }
 }

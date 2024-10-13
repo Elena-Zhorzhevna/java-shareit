@@ -110,28 +110,22 @@ public class ItemServiceTest {
         Long userId = 1L;
         ItemDto itemDto = new ItemDto(null, "Item1", "Description1", true, null);
 
-        // Создаем объект UserDto с идентификатором
         UserDto userDto = new UserDto();
         userDto.setId(userId);
         userDto.setName("User1");
         userDto.setEmail("user1@example.com");
 
-        // Создание User для маппинга
         User user = UserMapper.mapUserDtoToUser(userDto);
 
-        // Убедитесь, что user не равен null
         assertNotNull(user);
 
-        // Мок для возвращения пользователя
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        // Мок для создания и сохранения вещи
         Item item = ItemMapper.mapItemDtoToItem(itemDto);
-        item.setOwner(user); // Установка владельца
+        item.setOwner(user);
 
         when(itemRepository.save(any(Item.class))).thenReturn(item);
 
-        // Мок для получения пользователя через userService
         when(userService.getUserById(userId)).thenReturn(userDto);
 
         ItemDto result = itemService.addItem(userId, itemDto);
@@ -188,16 +182,12 @@ public class ItemServiceTest {
 
     @Test
     void getCommentsByItemId_ReturnsComments() {
-        // Устанавливаем мок для возвращения пустого списка комментариев
         when(commentRepository.findAllByItemId(eq(1L), any(Sort.class))).thenReturn(Collections.emptyList());
 
-        // Вызываем метод для получения комментариев
         List<CommentDto> comments = itemService.getCommentsByItemId(1L);
 
-        // Проверяем, что комментариев нет
         assertEquals(0, comments.size());
 
-        // Проверяем, что метод был вызван с правильными аргументами
         verify(commentRepository, times(1)).findAllByItemId(eq(1L), any(Sort.class));
     }
 }

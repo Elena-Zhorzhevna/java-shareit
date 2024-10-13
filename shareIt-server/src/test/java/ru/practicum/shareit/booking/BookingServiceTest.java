@@ -73,71 +73,168 @@ public class BookingServiceTest {
 
     @Test
     void getBookingsByUserIdWithState_ValidRequest_ReturnsBookingsList() {
-        // Мокаем поведение userRepository
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user)); // Возвращаем пользователя
-        when(userService.getUserById(user.getId())).thenReturn(UserMapper.mapToUserDto(user)); // Возвращаем UserDto
-        when(bookingRepository.getAllByBookerId(user.getId())).thenReturn(Collections.singletonList(booking)); // Возвращаем бронирование
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userService.getUserById(user.getId())).thenReturn(UserMapper.mapToUserDto(user));
+        when(bookingRepository.getAllByBookerId(user.getId())).thenReturn(Collections.singletonList(booking));
 
         List<BookingDto> result = bookingService.getBookingsByUserIdWithState("ALL", user.getId());
 
         assertEquals(1, result.size());
     }
 
+
     @Test
     void getBookingsOfOwnerItems_ValidRequest_ReturnsBookingsList() {
-        // Мокаем поведение userRepository
+
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
 
-        // Мокаем предмет, который принадлежит пользователю
         when(itemRepository.findByOwnerId(user.getId())).thenReturn(Collections.singletonList(item));
 
-        // Мокаем поведение bookingRepository для возврата списка бронирований
         when(bookingRepository.getAllBookingsForItems(Collections.singletonList(item.getId())))
                 .thenReturn(Collections.singletonList(booking));
 
-        // Вызов метода для получения бронирований владельца
         List<BookingDto> result = bookingService.getBookingsOfOwnerItems(user.getId(), "ALL");
 
-        // Проверка, что размер результата соответствует ожиданиям
         assertEquals(1, result.size());
     }
 
     @Test
+    void create_ShouldCreateBooking_WhenValidData() {
+        Long bookerId = 1L;
+        Long itemId = 2L;
+        BookingDtoToPut bookingDto = new BookingDtoToPut();
+        bookingDto.setItemId(itemId);
+
+        User booker = new User();
+        booker.setId(bookerId);
+
+        User itemOwner = new User();
+        itemOwner.setId(3L);
+
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(true);
+        item.setOwner(itemOwner);
+
+        Booking booking = new Booking();
+        booking.setItem(item);
+        booking.setBooker(booker);
+
+        when(userRepository.findById(bookerId)).thenReturn(Optional.of(booker));
+        when(itemService.getItemById(itemId)).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
+        when(bookingRepository.save(any())).thenReturn(booking);
+
+        BookingDto result = bookingService.create(bookingDto, bookerId);
+
+        assertNotNull(result);
+        verify(bookingRepository, times(1)).save(any());
+    }
+
+
+    @Test
     void create_ItemNotAvailable_ThrowsValidationException() {
-        // Устанавливаем, что предмет не доступен
+
         item.setAvailable(false);
 
-        // Мокаем поведение userRepository, чтобы вернуть пользователя
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user)); // Возвращаем пользователя
 
-        // Создаем BookingDtoToPut с корректными значениями
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
         BookingDtoToPut bookingDtoToPut = new BookingDtoToPut(item.getId(), LocalDateTime.now().plusDays(1),
                 LocalDateTime.now().plusDays(2));
 
-        // Мокаем поведение itemService, чтобы вернуть ItemDto с недоступным предметом
         when(itemService.getItemById(item.getId())).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
 
-        // Проверка, что при создании бронирования выбрасывается ValidationException
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             bookingService.create(bookingDtoToPut, user.getId());
         });
 
-        // Дополнительно проверяем сообщение исключения
         assertEquals("Вещь с id = " + item.getId() + " не доступна для бронирования!",
                 exception.getMessage());
     }
 
     @Test
+    void create_ItemIsOwner_ThrowsNotFoundException() {
+        Long bookerId = 1L;
+        Long itemId = 2L;
+
+        User booker = new User();
+        booker.setId(bookerId);
+
+        User owner = new User();
+        owner.setId(bookerId);
+
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(true);
+        item.setOwner(owner);
+
+        BookingDtoToPut bookingDto = new BookingDtoToPut(itemId, LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(2));
+
+        when(userRepository.findById(bookerId)).thenReturn(Optional.of(booker));
+        when(itemService.getItemById(itemId)).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
+
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
+            bookingService.create(bookingDto, bookerId);
+        });
+
+        assertEquals("Пользователь не может бронировать собственные вещи!", exception.getMessage());
+    }
+
+    @Test
+    void create_ShouldThrowNotFound_WhenUserDoesNotExist() {
+        Long bookerId = 1L;
+        BookingDtoToPut bookingDto = new BookingDtoToPut();
+
+        when(userRepository.findById(bookerId)).thenReturn(Optional.empty());
+
+        Exception exception = assertThrows(NotFoundException.class, () -> {
+            bookingService.create(bookingDto, bookerId);
+        });
+
+        assertEquals("Пользователь с id = 1 не найден.", exception.getMessage());
+    }
+
+    @Test
+    void create_BookingTimeIntersects_ThrowsInvalidRequestException() {
+        User owner = new User();
+        owner.setId(1L);
+
+        User booker = new User();
+        booker.setId(2L);
+
+        Item item = new Item();
+        item.setId(3L);
+        item.setAvailable(true);
+        item.setOwner(owner);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(itemService.getItemById(item.getId())).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
+
+        Booking existingBooking = new Booking(4L, LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(3),
+                item, owner, Status.WAITING);
+        when(bookingRepository.findBookingByItemId(item.getId())).thenReturn(Collections.singletonList(existingBooking));
+
+        BookingDtoToPut bookingDtoToPut = new BookingDtoToPut(item.getId(), LocalDateTime.now().plusDays(2),
+                LocalDateTime.now().plusDays(4));
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> {
+            bookingService.create(bookingDtoToPut, booker.getId());
+        });
+
+        assertEquals("Вещь с id = " + item.getId() + " находится в аренде.", exception.getMessage());
+    }
+
+    @Test
     void getLastBooking_NoLastBooking_ThrowsNotFoundException() {
-        // Настройка мока, чтобы вернуть null
+
         when(bookingRepository.getLastBookingForItem(item.getId())).thenReturn(null);
 
-        // Проверка, что метод выбрасывает NotFoundException
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             bookingService.getLastBooking(item.getId());
         });
 
-        // Проверка сообщения исключения
         assertEquals("Не найдено последнее бронирование для вещи с id = " + item.getId(),
                 exception.getMessage());
     }
@@ -151,7 +248,8 @@ public class BookingServiceTest {
             bookingService.getNextBooking(item.getId());
         });
 
-        assertEquals("Не найдено следующее бронирование для вещи с id = " + item.getId(), exception.getMessage());
+        assertEquals("Не найдено следующее бронирование для вещи с id = " + item.getId(),
+                exception.getMessage());
     }
 
     @Test
@@ -222,5 +320,78 @@ public class BookingServiceTest {
         BookingDto result = bookingService.getNextBooking(item.getId());
 
         assertNotNull(result);
+    }
+
+    @Test
+    void create_BookingWithDifferentStatus_ReturnsCorrectStatus() {
+        Long bookerId = 1L;
+        Long itemId = 2L;
+
+        User booker = new User();
+        booker.setId(bookerId);
+
+        User itemOwner = new User();
+        itemOwner.setId(3L);
+
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(true);
+        item.setOwner(itemOwner);
+
+        BookingDtoToPut bookingDto = new BookingDtoToPut(itemId, LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(2));
+
+        when(userRepository.findById(bookerId)).thenReturn(Optional.of(booker));
+        when(itemService.getItemById(itemId)).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
+        when(bookingRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingDto result = bookingService.create(bookingDto, bookerId);
+
+        assertEquals(Status.WAITING, result.getStatus());
+    }
+
+    @Test
+    void create_InvalidTimeFrame_ThrowsInvalidRequestException() {
+        Long bookerId = 1L;
+        Long itemId = 2L;
+
+        User booker = new User();
+        booker.setId(bookerId);
+
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(true);
+        item.setOwner(new User(3L, "Owner", "owner@example.com"));
+
+        LocalDateTime existingStart = LocalDateTime.now();
+        LocalDateTime existingEnd = LocalDateTime.now().plusDays(1);
+        Booking existingBooking = new Booking();
+        existingBooking.setItem(item);
+        existingBooking.setStart(existingStart);
+        existingBooking.setEnd(existingEnd);
+
+        BookingDtoToPut bookingDto = new BookingDtoToPut(itemId, existingStart.plusHours(1), existingEnd.minusHours(1));
+
+        when(userRepository.findById(bookerId)).thenReturn(Optional.of(booker));
+        when(itemService.getItemById(itemId)).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
+        when(bookingRepository.findBookingByItemId(itemId)).thenReturn(List.of(existingBooking));
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> {
+            bookingService.create(bookingDto, bookerId);
+        });
+
+        assertEquals("Вещь с id = 2 находится в аренде.", exception.getMessage());
+    }
+
+
+    @Test
+    void getBookingsByUserIdWithState_NoBookings_ReturnsEmptyList() {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(bookingRepository.getAllByBookerId(user.getId())).thenReturn(Collections.emptyList());
+
+        List<BookingDto> result = bookingService.getBookingsByUserIdWithState("ALL", user.getId());
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 }
