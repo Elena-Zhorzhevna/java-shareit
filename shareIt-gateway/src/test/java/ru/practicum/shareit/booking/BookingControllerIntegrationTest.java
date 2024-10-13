@@ -16,7 +16,6 @@ import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -131,7 +130,7 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(patch("/bookings/{bookingId}", bookingId)
                         .header("X-Sharer-User-Id", 1L)
                         .param("approved", String.valueOf(approved)))
-               //.andDo(print())
+                //.andDo(print())
                 .andExpect(status().isOk());
 
         verify(bookingClient).updateBooking(eq(bookingId), eq(1L), eq(approved));
@@ -168,5 +167,84 @@ class BookingControllerIntegrationTest {
                 .andExpect(jsonPath("$.start").value(start.toString()))
                 .andExpect(jsonPath("$.end").value(end.toString()))
                 .andExpect(jsonPath("$.approved").value(true));
+    }
+
+    @SneakyThrows
+    @Test
+    void getBookings_whenValidRequest_thenReturnBookings() {
+        long userId = 1L;
+        String stateParam = "all";
+        int from = 0;
+        int size = 10;
+
+        when(bookingClient.getBookings(eq(userId), any(), eq(from), eq(size)))
+                .thenReturn(ResponseEntity.ok("mocked bookings response"));
+
+        mockMvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", userId)
+                        .param("state", stateParam)
+                        .param("from", String.valueOf(from))
+                        .param("size", String.valueOf(size)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("mocked bookings response"));
+    }
+
+/*    @SneakyThrows
+    @Test
+    void getBookings_whenUnknownState_thenReturnBadRequest() {
+        long userId = 1L;
+
+        mockMvc.perform(get("/bookings")
+                        .header("X-Sharer-User-Id", userId)
+                        .param("state", "unknown"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.error").value("Unknown state: unknown"));
+    }*/
+
+    @SneakyThrows
+    @Test
+    void getAllBookingsByOwner_whenValidRequest_thenReturnBookings() {
+        long userId = 1L;
+        String stateParam = "all";
+
+        when(bookingClient.getAllBookingsByOwner(eq(userId), any()))
+                .thenReturn(ResponseEntity.ok("mocked owner bookings response"));
+
+        mockMvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", userId)
+                        .param("state", stateParam))
+                .andExpect(status().isOk())
+                .andExpect(content().string("mocked owner bookings response"));
+    }
+
+/*    @SneakyThrows
+    @Test
+    void getAllBookingsByOwner_whenUnknownState_thenReturnBadRequest() {
+        long userId = 1L;
+
+        mockMvc.perform(get("/bookings/owner")
+                        .header("X-Sharer-User-Id", userId)
+                        .param("state", "unknown"))
+                .andExpect(status().isBadRequest())
+                .andExpect(result ->
+                        assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
+    }*/
+
+    @SneakyThrows
+    @Test
+    void update_whenValidRequest_thenReturnStatusIsOk() {
+        long bookingId = 1L;
+        boolean approved = true;
+
+        when(bookingClient.updateBooking(eq(bookingId), eq(1L), eq(approved)))
+                .thenReturn(ResponseEntity.ok().build());
+
+        mockMvc.perform(patch("/bookings/{bookingId}", bookingId)
+                        .header("X-Sharer-User-Id", 1L)
+                        .param("approved", String.valueOf(approved)))
+                .andExpect(status().isOk());
+
+        verify(bookingClient).updateBooking(eq(bookingId), eq(1L), eq(approved));
     }
 }

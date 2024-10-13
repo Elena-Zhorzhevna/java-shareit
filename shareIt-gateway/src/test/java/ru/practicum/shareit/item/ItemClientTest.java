@@ -1,136 +1,274 @@
-/*
 package ru.practicum.shareit.item;
 
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.client.MockRestServiceServer;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
-import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
-
-import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@SpringBootTest
-@AutoConfigureMockMvc
-public class ItemClientTest {
+@RestClientTest(ItemClient.class)
+class ItemClientTest {
+    private final String serverUrl = "http://localhost:9090/items";
 
     @Autowired
-    private MockMvc mockMvc;
-
-    @Mock
     private ItemClient itemClient;
 
-    @InjectMocks
-    private ItemController itemController;
+    @Autowired
+    private MockRestServiceServer mockServer;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private final ItemDto newItemDto = new ItemDto("name", "description", true);
+    private final ItemDto updateItemDto = new ItemDto("name2", "description2", true);
+    private final CommentDto newCommentDto = new CommentDto("text");
+
+    private String body;
+    private String updateBody;
 
     @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @SneakyThrows
+    void setUp() {
+        body = objectMapper.writeValueAsString(newItemDto);
+        updateBody = objectMapper.writeValueAsString(updateItemDto);
     }
 
     @Test
-    public void testCreateItem() throws Exception {
-        ItemDto itemDto = new ItemDto("Item Name", "Item Description", true);
-        ResponseEntity<Object> responseEntity = new ResponseEntity<>(itemDto, OK);
+    @SneakyThrows
+    void create() {
+        Long ownerId = 1L;
 
-        when(itemClient.createItem(any(Long.class), any(ItemDto.class))).thenReturn(responseEntity);
+        mockServer.expect(requestTo(serverUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .body(body)
+                        .contentType(MediaType.APPLICATION_JSON));
 
-        mockMvc.perform(post("/items")
-                        .header("X-Sharer-User-Id", 1L)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(itemDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Item Name"))
-                .andExpect(jsonPath("$.description").value("Item Description"))
-                .andExpect(jsonPath("$.available").value(true));
+        ResponseEntity<Object> responseEntity = itemClient.createItem(ownerId, newItemDto);
+        String responseBody = objectMapper.writeValueAsString(responseEntity.getBody());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(body, responseBody);
     }
 
     @Test
-    public void testGetAllItemsByUserId() throws Exception {
-        List<ItemDto> itemList = List.of(new ItemDto("Item 1", "Description 1", true),
-                new ItemDto("Item 2", "Description 2", false));
-        ResponseEntity<Object> responseEntity = new ResponseEntity<>(itemList, OK);
-
-        when(itemClient.getAllItemsByUserId(any(Long.class))).thenReturn(responseEntity);
-
-        mockMvc.perform(get("/items")
-                        .header("X-Sharer-User-Id", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Item 1"))
-                .andExpect(jsonPath("$[1].description").value("Description 2"));
-    }
-
-    @Test
-    public void testGetItemById() throws Exception {
+    @SneakyThrows
+    void update() {
+        Long userId = 1L;
         Long itemId = 1L;
+
+        mockServer.expect(requestTo(serverUrl + "/%d".formatted(itemId)))
+                .andExpect(method(HttpMethod.PATCH))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .body(updateBody)
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.updateItem(itemId, userId, updateItemDto);
+        String responseBody = objectMapper.writeValueAsString(responseEntity.getBody());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(updateBody, responseBody);
+    }
+
+    @Test
+    @SneakyThrows
+    void getAllByUserId() {
         Long userId = 1L;
 
-        // Создаем один и тот же объект для запроса и ответа
-        ItemDto itemDto = new ItemDto("Item Name", "Item Description", true);
-        ResponseEntity<Object> responseEntity = new ResponseEntity<>(itemDto, OK);
+        mockServer.expect(requestTo(serverUrl + "/%d".formatted(userId)))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .body("[" + body + "]") // Возвращаем массив
+                        .contentType(MediaType.APPLICATION_JSON));
 
-        // Настраиваем мок для метода getItemById
-        when(itemClient.getItemById(eq(itemId), eq(userId))).thenReturn(responseEntity);
+        ResponseEntity<Object> responseEntity = itemClient.getAllItemsByUserId(userId);
+        String responseBody = objectMapper.writeValueAsString(responseEntity.getBody());
 
-        // Выполняем запрос
-        mockMvc.perform(get("/items/{itemId}", itemId)
-                        .header("X-Sharer-User-Id", userId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value(itemDto.getName()))
-                .andExpect(jsonPath("$.description").value(itemDto.getDescription()))
-                .andExpect(jsonPath("$.available").value(itemDto.getAvailable()));
-    }
-
-
-
-    @Test
-    public void testUpdateItem() throws Exception {
-        Long itemId = 1L;
-        ItemDto newItemDto = new ItemDto("Updated Item", "Updated Description", true);
-        ResponseEntity<Object> responseEntity = new ResponseEntity<>(newItemDto, OK);
-
-        when(itemClient.updateItem(eq(itemId), any(Long.class), any(ItemDto.class))).thenReturn(responseEntity);
-
-        mockMvc.perform(patch("/items/{itemId}", itemId)
-                        .header("X-Sharer-User-Id", 1L)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(newItemDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Item"));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals("[" + body + "]", responseBody);
     }
 
     @Test
-    public void testCreateComment() throws Exception {
+    @SneakyThrows
+    void getItemById() {
+        Long userId = 1L;
         Long itemId = 1L;
-        CommentDto commentDto = new CommentDto("Nice item!");
-        ResponseEntity<Object> responseEntity = new ResponseEntity<>(commentDto, OK);
 
-        when(itemClient.createComment(any(CommentDto.class), eq(itemId), any(Long.class))).thenReturn(responseEntity);
+        mockServer.expect(requestTo(serverUrl + "/%d".formatted(itemId)))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .body(body)
+                        .contentType(MediaType.APPLICATION_JSON));
 
-        mockMvc.perform(post("/items/{itemId}/comment", itemId)
-                        .header("X-Sharer-User-Id", 1L)
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(commentDto)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.text").value("Nice item!"));
+        ResponseEntity<Object> responseEntity = itemClient.getItemById(itemId, userId);
+        String responseBody = objectMapper.writeValueAsString(responseEntity.getBody());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(body, responseBody);
+    }
+
+    @Test
+    @SneakyThrows
+    void getBySearch() {
+        Long userId = 1L;
+        String search = "name";
+
+        mockServer.expect(requestTo(serverUrl + "/search?text=%s".formatted(search)))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .body("[" + body + "]") // Возвращаем массив
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.getBySearch(userId, search);
+        String responseBody = objectMapper.writeValueAsString(responseEntity.getBody());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals("[" + body + "]", responseBody);
+    }
+
+    @Test
+    @SneakyThrows
+    void createComment() {
+        Long userId = 1L;
+        Long itemId = 1L;
+
+        mockServer.expect(requestTo(serverUrl + "/%d/comment".formatted(itemId)))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andRespond(withStatus(HttpStatus.OK)
+                        .body(body)
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.createComment(newCommentDto, itemId, userId);
+        String responseBody = objectMapper.writeValueAsString(responseEntity.getBody());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(body, responseBody);
+    }
+
+    @Test
+    @SneakyThrows
+    void create_whenBadRequest_thenReturnError() {
+        Long ownerId = 1L;
+
+        mockServer.expect(requestTo(serverUrl))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST)
+                        .body("{\"error\":\"Некорректный запрос\", \"message\":\"Имя не должно быть пустым\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.createItem(ownerId, newItemDto);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
+    }
+
+    @Test
+    @SneakyThrows
+    void update_whenItemNotFound_thenReturnError() {
+        Long userId = 1L;
+        Long itemId = 999L;
+
+        mockServer.expect(requestTo(serverUrl + "/%d".formatted(itemId)))
+                .andExpect(method(HttpMethod.PATCH))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND)
+                        .body("{\"error\":\"Пользователь не найден\", \"message\":\"Нет такого предмета\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.updateItem(itemId, userId, updateItemDto);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
+    }
+
+    @Test
+    @SneakyThrows
+    void createComment_whenCommentInvalid_thenReturnError() {
+        Long userId = 1L;
+        Long itemId = 1L;
+        CommentDto invalidCommentDto = new CommentDto(""); // Некорректный комментарий
+
+        mockServer.expect(requestTo(serverUrl + "/%d/comment".formatted(itemId)))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST)
+                        .body("{\"error\":\"Ошибка валидации\", \"message\":\"Комментарий не может быть пустым\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.createComment(invalidCommentDto, itemId, userId);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
+    }
+
+    @Test
+    @SneakyThrows
+    void getAllByUserId_whenNotFound_thenReturnError() {
+        Long userId = 1L;
+
+        mockServer.expect(requestTo(serverUrl + "/%d".formatted(userId)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND)
+                        .body("{\"error\":\"Пользователь не найден\", \"message\":\"Нет элементов для данного пользователя\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.getAllItemsByUserId(userId);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
+    }
+
+    @Test
+    @SneakyThrows
+    void getItemById_whenNotFound_thenReturnError() {
+        Long userId = 1L;
+        Long itemId = 999L;
+
+        mockServer.expect(requestTo(serverUrl + "/%d".formatted(itemId)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND)
+                        .body("{\"error\":\"Пользователь не найден\", \"message\":\"Нет элемента с таким ID\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.getItemById(itemId, userId);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
+    }
+
+    @Test
+    @SneakyThrows
+    void getBySearch_whenNoResults_thenReturnError() {
+        Long userId = 1L;
+        String search = "nonexistent";
+
+        mockServer.expect(requestTo(serverUrl + "/search?text=%s".formatted(search)))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND)
+                        .body("{\"error\":\"Не найдено\", \"message\":\"Нет элементов по запросу\"}")
+                        .contentType(MediaType.APPLICATION_JSON));
+
+        ResponseEntity<Object> responseEntity = itemClient.getBySearch(userId, search);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertNotNull(responseEntity.getBody());
     }
 }
-*/
