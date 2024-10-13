@@ -169,13 +169,14 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public ItemDto updateItem(Long userId, Long itemId, ItemDto newItemDto) {
-        userRepository.findById(userId).orElseThrow(
-                () -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
 
-        Item oldItem = (itemRepository.findById(itemId)).get();
+        Item oldItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена!"));
 
         if (!oldItem.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Пользователь не является владельцем вещи.!");
+            throw new NotFoundException("Пользователь не является владельцем вещи!");
         }
 
         if (newItemDto.getName() != null) {
@@ -193,6 +194,41 @@ public class ItemServiceImpl implements ItemService {
         newDto.setComments(commentDtos);
         return newDto;
     }
+
+
+   /* @Override
+    public ItemDto updateItem(Long userId, Long itemId, ItemDto newItemDto) {
+
+*//*        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден."));
+
+        Item oldItem = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена!"));*//*
+
+        userRepository.findById(userId).orElseThrow(
+                () -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
+
+        Item oldItem = (itemRepository.findById(itemId)).get();
+
+        if (!oldItem.getOwner().getId().equals(userId)) {
+            throw new NotFoundException("Пользователь не является владельцем вещи!");
+        }
+
+        if (newItemDto.getName() != null) {
+            oldItem.setName(newItemDto.getName());
+        }
+        if (newItemDto.getDescription() != null) {
+            oldItem.setDescription(newItemDto.getDescription());
+        }
+        if (newItemDto.getAvailable() != null) {
+            oldItem.setAvailable(newItemDto.getAvailable());
+        }
+
+        ItemDto newDto = ItemMapper.mapToItemDtoWithComments(itemRepository.save(oldItem));
+        List<CommentDto> commentDtos = getCommentsByItemId(newItemDto.getId());
+        newDto.setComments(commentDtos);
+        return newDto;
+    }*/
 
     /**
      * Удаление всех вещей пользователя с указанным идентификатором.
@@ -333,4 +369,4 @@ public class ItemServiceImpl implements ItemService {
         if (!booking.stream().anyMatch(booking1 -> booking1.getEnd().isBefore(LocalDateTime.now()))) {
             throw new ValidationException("End time is after now time");
         }*/
-    }
+}

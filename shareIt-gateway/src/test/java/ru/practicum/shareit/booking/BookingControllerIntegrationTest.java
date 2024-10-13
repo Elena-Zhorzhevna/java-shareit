@@ -28,6 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(BookingController.class)
 class BookingControllerIntegrationTest {
 
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+
     @Autowired
     ObjectMapper objectMapper;
 
@@ -51,22 +53,18 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(bookingDto)))
-                //.andDo(print())
                 .andExpect(status().isOk());
     }
 
     @SneakyThrows
     @Test
     void bookItem_whenValidRequest_thenReturnStatusIsCreated() {
-        BookingDto requestDto = new BookingDto(
-                1L,
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(2)
-        );
 
-        String expectedStart = requestDto.getStart().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        String expectedEnd = requestDto.getEnd().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        LocalDateTime start = LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS);;
+        LocalDateTime end = LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.SECONDS);;
+        BookingDto requestDto = new BookingDto(1L, start, end);
 
+        // Мокируем ответ контроллера
         when(bookingClient.createBooking(any(BookingDto.class), any(Long.class)))
                 .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(requestDto));
 
@@ -77,9 +75,11 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.itemId").value(1L))
-                .andExpect(jsonPath("$.start").value(expectedStart))
-                .andExpect(jsonPath("$.end").value(expectedEnd));
+                .andExpect(jsonPath("$.start").value(start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
+                .andExpect(jsonPath("$.end").value(end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))));
+
     }
+
 
     @SneakyThrows
     @Test
@@ -93,7 +93,6 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
-                //.andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").value("Ошибка валидации"));
@@ -112,7 +111,6 @@ class BookingControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestDto)))
-                //.andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").value("Ошибка валидации"))
@@ -131,7 +129,6 @@ class BookingControllerIntegrationTest {
         mockMvc.perform(patch("/bookings/{bookingId}", bookingId)
                         .header("X-Sharer-User-Id", 1L)
                         .param("approved", String.valueOf(approved)))
-                //.andDo(print())
                 .andExpect(status().isOk());
 
         verify(bookingClient).updateBooking(eq(bookingId), eq(1L), eq(approved));
@@ -142,8 +139,8 @@ class BookingControllerIntegrationTest {
     void getBooking_whenValidRequest_thenReturnStatusIsOk() {
         long bookingId = 1L;
         long itemId = 3L; // Пример ID предмета
-        LocalDateTime start = LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS);
-        LocalDateTime end = LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.SECONDS);
+        LocalDateTime start = LocalDateTime.now().plusDays(1);
+        LocalDateTime end = LocalDateTime.now().plusDays(2);
 
 
         BookingResponseDto bookingResponseDto = new BookingResponseDto(
@@ -154,19 +151,18 @@ class BookingControllerIntegrationTest {
                 true
         );
 
-
         when(bookingClient.getBookingById(any(Long.class), eq(bookingId)))
                 .thenReturn(ResponseEntity.ok(bookingResponseDto));
 
         mockMvc.perform(get("/bookings/{bookingId}", bookingId)
                         .header("X-Sharer-User-Id", 1L))
-                //.andDo(print())
+
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(bookingId))
                 .andExpect(jsonPath("$.itemId").value(itemId))
-                .andExpect(jsonPath("$.start").value(start.toString()))
-                .andExpect(jsonPath("$.end").value(end.toString()))
+                .andExpect(jsonPath("$.start").value(start.format(formatter)))
+                .andExpect(jsonPath("$.end").value(end.format(formatter)))
                 .andExpect(jsonPath("$.approved").value(true));
     }
 

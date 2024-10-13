@@ -105,6 +105,8 @@ public class BookingServiceTest {
         Long itemId = 2L;
         BookingDtoToPut bookingDto = new BookingDtoToPut();
         bookingDto.setItemId(itemId);
+        bookingDto.setStart(LocalDateTime.now());
+        bookingDto.setEnd(LocalDateTime.now().plusDays(2));
 
         User booker = new User();
         booker.setId(bookerId);
@@ -187,14 +189,18 @@ public class BookingServiceTest {
         Long bookerId = 1L;
         BookingDtoToPut bookingDto = new BookingDtoToPut();
 
+        bookingDto.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(2));
+
         when(userRepository.findById(bookerId)).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(NotFoundException.class, () -> {
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             bookingService.create(bookingDto, bookerId);
         });
 
         assertEquals("Пользователь с id = 1 не найден.", exception.getMessage());
     }
+
 
     @Test
     void create_BookingTimeIntersects_ThrowsInvalidRequestException() {
@@ -394,4 +400,38 @@ public class BookingServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void create_ShouldThrowNotFound_WhenUserTriesToBookOwnItem() {
+        Long bookerId = 1L;
+        Long itemId = 2L;
+
+        // Создаем пользователя
+        User user = new User();
+        user.setId(bookerId);
+
+        // Создаем предмет
+        Item item = new Item();
+        item.setId(itemId);
+        item.setOwner(user);
+        item.setAvailable(true); // Убедитесь, что здесь установлено значение
+
+        // Настраиваем моки
+        when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
+        when(itemService.getItemById(itemId)).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
+
+        // Создаем DTO для бронирования
+        BookingDtoToPut bookingDto = new BookingDtoToPut();
+        bookingDto.setItemId(itemId);
+        bookingDto.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(2));
+
+        // Проверка исключения
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
+            bookingService.create(bookingDto, bookerId);
+        });
+
+        assertEquals("Пользователь не может бронировать собственные вещи!", exception.getMessage());
+    }
+
 }

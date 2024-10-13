@@ -6,6 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.server.exception.ConflictException;
+import ru.practicum.shareit.server.exception.NotFoundException;
+import ru.practicum.shareit.server.exception.ValidationException;
 import ru.practicum.shareit.server.user.dto.UserDto;
 import ru.practicum.shareit.server.user.model.User;
 import ru.practicum.shareit.server.user.service.UserService;
@@ -125,5 +128,59 @@ public class UserServiceIntegrationTest {
         userService.removeAllUsers();
 
         assertThat(userRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    public void testAddUser_withExistingEmail_shouldThrowConflictException() {
+        User user1 = new User("UserOne", "userOne@email.ru");
+        userRepository.save(user1);
+
+        User user2 = new User("UserTwo", "userOne@email.ru");
+
+        assertThatThrownBy(() -> userService.addUser(user2))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("Пользователь с email: userOne@email.ru уже существует.");
+    }
+
+    @Test
+    public void testGetUserById_whenUserNotFound_shouldThrowNotFoundException() {
+        Long nonExistentId = 999L; // несуществующий ID
+
+        assertThatThrownBy(() -> userService.getUserById(nonExistentId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Пользователь с id = " + nonExistentId + " не найден!");
+    }
+
+    @Test
+    public void testUpdateUser_whenUserNotFound_shouldThrowNotFoundException() {
+        Long nonExistentId = 999L; // несуществующий ID
+        UserDto updateUserDto = new UserDto();
+        updateUserDto.setId(nonExistentId);
+        updateUserDto.setName("UpdatedUser");
+        updateUserDto.setEmail("updated@email.ru");
+
+        assertThatThrownBy(() -> userService.updateUser(nonExistentId, updateUserDto))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Пользователь с id = " + nonExistentId + " не найден!");
+    }
+
+    @Test
+    public void testRemoveUserById_whenUserNotFound_shouldThrowNotFoundException() {
+        Long nonExistentId = 999L; // несуществующий ID
+
+        assertThatThrownBy(() -> userService.removeUserById(nonExistentId))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessageContaining("Пользователь с id = " + nonExistentId + " не найден!");
+    }
+
+    @Test
+    public void testAddUser_withEmptyEmail_shouldThrowValidationException() {
+        User user = new User();
+        user.setName("User");
+        user.setEmail(null);
+
+        assertThatThrownBy(() -> userService.addUser(user))
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Электронная почта не должна быть пустой.");
     }
 }

@@ -106,7 +106,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         return addingItemRequest;
     }*/
 
-    @Override
+ /*   @Override
     public ItemRequestDto getItemRequestById(Long itemRequestId, Long userId) {
         log.info("Попытка получить запрос вещи с id = {}", itemRequestId);
 
@@ -114,7 +114,20 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId)
                 .orElseThrow(() -> new NotFoundException("Запрос с id = " + itemRequestId + "не найден!"));
         return ItemRequestMapper.mapToItemRequestDto(itemRequest);
-    }
+    }*/
+ @Override
+ public ItemRequestDto getItemRequestById(Long itemRequestId, Long userId) {
+     if (itemRequestId == null) {
+         throw new NotFoundException("Запрос с id не может быть null.");
+     }
+
+     log.info("Попытка получить запрос вещи с id = {}", itemRequestId);
+
+     userService.getUserById(userId);
+     ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId)
+             .orElseThrow(() -> new NotFoundException("Запрос с id = " + itemRequestId + " не найден!"));
+     return ItemRequestMapper.mapToItemRequestDto(itemRequest);
+ }
 
 
     public List<ItemRequestDto> getAllRequests(Long userId, Integer pageNum, Integer pageSize) {

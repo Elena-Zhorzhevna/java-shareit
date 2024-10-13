@@ -10,7 +10,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.domain.Sort;
+
 import ru.practicum.shareit.server.booking.storage.BookingRepository;
+
 import ru.practicum.shareit.server.exception.ValidationException;
 import ru.practicum.shareit.server.item.dto.CommentDto;
 import ru.practicum.shareit.server.item.dto.ItemDto;
@@ -189,5 +191,27 @@ public class ItemServiceTest {
         assertEquals(0, comments.size());
 
         verify(commentRepository, times(1)).findAllByItemId(eq(1L), any(Sort.class));
+    }
+
+    @Test
+    void getAll_ReturnsEmptyList_WhenNoItemsExist() {
+        when(itemRepository.findAll()).thenReturn(Collections.emptyList());
+
+        Collection<ItemDto> items = itemService.getAll();
+
+        assertEquals(0, items.size());
+        verify(itemRepository, times(1)).findAll();
+    }
+
+    @Test
+    void getAllItemsByUserId_ReturnsEmptyList_WhenUserHasNoItems() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(itemRepository.findByOwnerId(1L)).thenReturn(Collections.emptyList());
+
+        List<ItemDto> items = itemService.getAllItemsByUserId(1L);
+
+        assertEquals(0, items.size());
+        verify(userRepository, times(1)).findById(1L);
+        verify(itemRepository, times(1)).findByOwnerId(1L);
     }
 }

@@ -26,8 +26,11 @@ import ru.practicum.shareit.server.user.storage.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -63,13 +66,10 @@ public class BookingServiceIntegrationTest {
         bookingRepository.deleteAll();
         Long itemId = 3L;
 
-        // Создаем владельца
         owner = userRepository.save(new User("Owner", "owner@example.com"));
 
-        // Создаем арендатора
         booker = userRepository.save(new User("Booker", "booker@example.com"));
 
-        // Создаем предмет
         item = new ItemDto(itemId, "ItemName", "Description", owner, true);
         item = itemService.addItem(item.getOwner().getId(), item);
     }
@@ -85,7 +85,6 @@ public class BookingServiceIntegrationTest {
         bookingDto.setStart(LocalDateTime.now().plusDays(1));
         bookingDto.setEnd(LocalDateTime.now().plusDays(2));
 
-        // Создаем бронирование и проверяем его
         BookingDto createdBooking = bookingService.create(bookingDto, booker.getId());
 
         assertThat(createdBooking).isNotNull();
@@ -241,5 +240,67 @@ public class BookingServiceIntegrationTest {
 
         assertThat(ownerBookings).isNotNull();
         assertThat(ownerBookings.size()).isGreaterThan(0);
+    }
+
+    @Test
+    public void testUpdateBooking_WhenBookingNotFound_ShouldThrowNotFoundException() {
+        assertThrows(NotFoundException.class, () -> {
+            bookingService.update(999L, owner.getId(), true);
+        });
+    }
+
+    @Test
+    public void testGetBookingById_WhenUserNotAuthorized_ShouldThrowNotFoundException() {
+        BookingDtoToPut bookingDto = new BookingDtoToPut();
+        bookingDto.setItemId(item.getId());
+        bookingDto.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(2));
+        BookingDto createdBooking = bookingService.create(bookingDto, booker.getId());
+
+        assertThrows(NotFoundException.class, () -> {
+            bookingService.getBookingById(createdBooking.getId(), 999L);
+        });
+    }
+
+    @Test
+    public void testGetBookingsByUserId_WhenUserHasNoBookings_ShouldReturnEmptyList() {
+        List<BookingDto> bookings = bookingService.getBookingsByUserIdWithState("ALL", booker.getId());
+
+        assertThat(bookings).isNotNull();
+        assertThat(bookings.size()).isEqualTo(0);
+    }
+
+    @Test
+    public void testGetBookingsOfOwnerItems_WhenNoBookings_ShouldReturnEmptyList() {
+        List<BookingDto> ownerBookings = bookingService.getBookingsOfOwnerItems(owner.getId(), "ALL");
+
+        assertThat(ownerBookings).isNotNull();
+        assertThat(ownerBookings.size()).isEqualTo(0);
+    }
+
+    @Test
+    public void testUpdateBooking_WhenNotOwner_ShouldThrowNotFoundException() {
+        BookingDtoToPut bookingDto = new BookingDtoToPut();
+        bookingDto.setItemId(item.getId());
+        bookingDto.setStart(LocalDateTime.now().plusDays(1));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(2));
+        BookingDto createdBooking = bookingService.create(bookingDto, booker.getId());
+
+        assertThrows(NotFoundException.class, () -> {
+            bookingService.update(createdBooking.getId(), booker.getId(), true);
+        });
+    }
+
+    @Test
+    public void testCreateBooking_WhenEndDateBeforeStartDate_ShouldThrowInvalidRequestException() {
+        BookingDtoToPut bookingDto = new BookingDtoToPut();
+        bookingDto.setItemId(item.getId());
+        bookingDto.setStart(LocalDateTime.now().plusDays(2));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(1));
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class,
+                () -> bookingService.create(bookingDto, booker.getId()));
+
+        assertThat(exception.getMessage()).isEqualTo("Дата окончания должна быть позже даты начала");
     }
 }

@@ -152,4 +152,43 @@ public class ItemRequestServiceIntegrationTest {
         ItemDto itemDto = new ItemDto(null, "ItemName", "Description", 500L);
         assertThrows(NotFoundException.class, () -> itemRequestService.addItemToRequest(itemDto));
     }
+
+    @Test
+    void addItemRequest_ThrowsNotFoundException_WhenUserDoesNotExist() {
+        ItemRequestDto requestDto = new ItemRequestDto(null, "Request", null, LocalDateTime.now(), null);
+        assertThrows(NotFoundException.class, () -> itemRequestService.addItemRequest(999L, requestDto));
+    }
+
+    @Test
+    void addItemRequest_ThrowsValidationException_WhenDescriptionIsEmpty() {
+        User user = new User(null, "User", "user@email.com");
+        userRepository.save(user);
+        ItemRequestDto requestDto = new ItemRequestDto(null, "", null, null, null);
+
+        assertThrows(ValidationException.class, () -> itemRequestService.addItemRequest(user.getId(), requestDto));
+    }
+
+    @Test
+    void getItemRequestById_ThrowsNotFoundException_WhenRequestIdIsNull() {
+        User user = new User(null, "User", "user@email.com");
+        userRepository.save(user);
+
+        assertThrows(NotFoundException.class, () -> itemRequestService.getItemRequestById(null, user.getId()));
+    }
+
+    @Test
+    void getAllRequests_ThrowsValidationException_WhenPageNumIsNegative() {
+        User user = new User(null, "User", "user@email.com");
+        userRepository.save(user);
+
+        assertThrows(ValidationException.class, () -> itemRequestService.getAllRequests(user.getId(), -1, 5));
+    }
+
+    @Test
+    void getAllRequests_ThrowsValidationException_WhenPageSizeIsZero() {
+        User user = new User(null, "User", "user@email.com");
+        userRepository.save(user);
+
+        assertThrows(ValidationException.class, () -> itemRequestService.getAllRequests(user.getId(), 0, 0));
+    }
 }

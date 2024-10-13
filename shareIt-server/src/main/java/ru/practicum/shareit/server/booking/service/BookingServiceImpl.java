@@ -46,64 +46,13 @@ public class BookingServiceImpl implements BookingService {
         this.userRepository = userRepository;
     }
 
-    /**
-     * Создание бронирования вещи.
-     *
-     * @param bookingDtoToPut Бронирование, которое нужно добавить.
-     * @param bookerId        Идентификатор арендатора вещи.
-     * @return Бронирование в формате Дто.
-     */
-    /*@Override
-    public BookingDto create(BookingDtoToPut bookingDtoToPut, Long bookerId) {
-        isUserExist(bookerId);
-        if (!isAvailableItem(bookingDtoToPut.getItemId())) {
-            throw new ValidationException("Вещь с id = " + bookingDtoToPut.getItemId() +
-                    " не доступна для бронирования!");
-        }
-        if (bookerId.equals(itemService.getItemById(bookingDtoToPut.getItemId()).getOwner().getId())) {
-            throw new NotFoundException("Вещь с id = " + bookingDtoToPut.getItemId() +
-                    " не доступна для бронирования владельцем!");
-        }
-        timeIntersectionsCheck(bookingDtoToPut, bookingDtoToPut.getItemId());
-        Booking bookingToCreate = BookingMapper.mapBookingDtoToPutToBooking(bookingDtoToPut);
-        bookingToCreate.setItem(ItemMapper.mapItemDtoToItem(itemService.getItemById(bookingDtoToPut.getItemId())));
-        bookingToCreate.setBooker(UserMapper.mapUserDtoToUser(userService.getUserById(bookerId)));
-
-        Booking booking = bookingRepository.save(bookingToCreate);
-        return BookingMapper.mapToBookingDto(booking);
-    }*/
-
-/*
-    @Override
-    public BookingDto create(BookingDtoToPut bookingDtoToPut, Long bookerId) {
-        // Проверка существования пользователя
-        isUserExist(bookerId);
-
-        // Проверка доступности вещи
-        if (!isAvailableItem(bookingDtoToPut.getItemId())) {
-            throw new ValidationException("Вещь с id = " + bookingDtoToPut.getItemId()
-                    + " не доступна для бронирования!");
-        }
-
-        // Проверка, является ли пользователь владельцем вещи
-        if (bookerId.equals(itemService.getItemById(bookingDtoToPut.getItemId()).getOwner().getId())) {
-            throw new NotFoundException("Вещь с id = " + bookingDtoToPut.getItemId()
-                    + " не доступна для бронирования владельцем!");
-        }
-
-        timeIntersectionsCheck(bookingDtoToPut, bookingDtoToPut.getItemId());
-
-        Booking bookingToCreate = BookingMapper.mapBookingDtoToPutToBooking(bookingDtoToPut);
-        bookingToCreate.setItem(ItemMapper.mapItemDtoToItem(itemService.getItemById(bookingDtoToPut.getItemId())));
-        bookingToCreate.setBooker(UserMapper.mapUserDtoToUser(userService.getUserById(bookerId)));
-
-        Booking booking = bookingRepository.save(bookingToCreate);
-        return BookingMapper.mapToBookingDto(booking);
-    }
-*/
 
     @Override
     public BookingDto create(BookingDtoToPut bookingDtoToPut, Long bookerId) {
+
+        if (bookingDtoToPut.getEnd().isBefore(bookingDtoToPut.getStart())) {
+            throw new InvalidRequestException("Дата окончания должна быть позже даты начала");
+        }
 
         User booker = userRepository.findById(bookerId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id = " + bookerId + " не найден."));
@@ -145,17 +94,19 @@ public class BookingServiceImpl implements BookingService {
      * @param approved  Параметр показывающий, подтверждено ли бронирование.
      * @return Бронирование с обновленными данными в формате Дто.
      */
-    public BookingDto update(Long bookingId, Long userId, Boolean approved) {
 
+    public BookingDto update(Long bookingId, Long userId, Boolean approved) {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new InvalidRequestException("Пользователь с id = " + userId + " не найден."));
 
-        Booking booking = BookingMapper.mapToBooking(getBookingById(bookingId, userId));
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Бронирование не найдено."));
 
-        isItemOwner(booking.getItem().getId(), booking.getItem().getOwner().getId());
+        isItemOwner(booking.getItem().getId(), user.getId());
+
         setBookingStatus(booking, approved);
-        booking.setId(bookingId);
         bookingRepository.save(booking);
+
         return BookingMapper.mapToBookingDto(booking);
     }
 
@@ -166,21 +117,7 @@ public class BookingServiceImpl implements BookingService {
      * @param userId    Идентификатор пользователя.
      * @return Бронирование с указанным идентификатором.
      */
-/*    @Override
-    public BookingDto getBookingById(Long bookingId, Long userId) {
-        if (userService.getUserById(userId) == null) {
-            throw new NotFoundException("Пользователя с id = " + userId + " не существует.");
-        }
 
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id =" + bookingId + " не найдено!"));
-
-        if (booking.getBooker().getId().equals(userId) || booking.getItem().getOwner().getId().equals(userId)) {
-            return BookingMapper.mapToBookingDto(booking);
-        } else {
-            throw new NotFoundException("Данные бронирования доступны только для владельца вещи или арендатора.");
-        }
-    }*/
     @Override
     public BookingDto getBookingById(Long bookingId, Long userId) {
         UserDto userDto = userService.getUserById(userId);
@@ -255,11 +192,7 @@ public class BookingServiceImpl implements BookingService {
      * @param itemId Идентификатор вещи.
      * @return Бронирование в формате Дто.
      */
-  /*  @Override
-    public BookingDto getLastBooking(Long itemId) {
-        Booking lastBooking = bookingRepository.getLastBookingForItem(itemId);
-        return BookingMapper.mapToBookingDto(lastBooking);
-    }*/
+
     @Override
     public BookingDto getLastBooking(Long itemId) {
         Booking lastBooking = bookingRepository.getLastBookingForItem(itemId);
@@ -314,12 +247,15 @@ public class BookingServiceImpl implements BookingService {
      * Метод проверяет, является ли пользователь владельцем вещи.
      *
      * @param itemId  Идентификатор вещи.
-     * @param ownerId Идентификатор владельца.
      * @return true or false
      */
-    private boolean isItemOwner(Long itemId, Long ownerId) {
-        return itemService.getAllItemsByUserId(ownerId).stream()
-                .anyMatch(i -> i.getId().equals(itemId));
+
+    private void isItemOwner(Long itemId, Long userId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Item not found"));
+        if (!item.getOwner().getId().equals(userId)) {
+            throw new NotFoundException("Пользователь не является владельцем этого предмета");
+        }
     }
 
     /**
@@ -399,21 +335,4 @@ public class BookingServiceImpl implements BookingService {
             throw new InvalidRequestException(String.format("Вещь с id = %d находится в аренде.", itemId));
         }
     }
-
-    /**
-     * Метод проверяет правильность дат бронирования.
-     *
-     * @param booking Бронирование.
-     */
-/*    private void checkBookingDates(Booking booking) {
-        if (booking.getEnd().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Время бронирования уже истекло.");
-        }
-        if (booking.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Дата начала бронирования уже прошла.");
-        }
-        if (booking.getEnd().isBefore(booking.getStart()) || booking.getStart().isEqual(booking.getEnd())) {
-            throw new ValidationException("Неверно указаны даты начала и окончания бронирования.");
-        }
-    } */
 }
