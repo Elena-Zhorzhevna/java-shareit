@@ -406,27 +406,22 @@ public class BookingServiceTest {
         Long bookerId = 1L;
         Long itemId = 2L;
 
-        // Создаем пользователя
         User user = new User();
         user.setId(bookerId);
 
-        // Создаем предмет
         Item item = new Item();
         item.setId(itemId);
         item.setOwner(user);
-        item.setAvailable(true); // Убедитесь, что здесь установлено значение
+        item.setAvailable(true);
 
-        // Настраиваем моки
         when(userRepository.findById(bookerId)).thenReturn(Optional.of(user));
         when(itemService.getItemById(itemId)).thenReturn(ItemMapper.mapToItemDtoWithComments(item));
 
-        // Создаем DTO для бронирования
         BookingDtoToPut bookingDto = new BookingDtoToPut();
         bookingDto.setItemId(itemId);
         bookingDto.setStart(LocalDateTime.now().plusDays(1));
         bookingDto.setEnd(LocalDateTime.now().plusDays(2));
 
-        // Проверка исключения
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             bookingService.create(bookingDto, bookerId);
         });
@@ -434,4 +429,103 @@ public class BookingServiceTest {
         assertEquals("Пользователь не может бронировать собственные вещи!", exception.getMessage());
     }
 
+    @Test
+    void create_BookingEndDateBeforeStartDate_ThrowsInvalidRequestException() {
+        Long bookerId = 1L;
+        Long itemId = 2L;
+
+        User booker = new User();
+        booker.setId(bookerId);
+
+        User itemOwner = new User(3L, "Owner", "owner@example.com");
+
+        Item item = new Item();
+        item.setId(itemId);
+        item.setAvailable(true);
+        item.setOwner(itemOwner);
+
+        BookingDtoToPut bookingDto = new BookingDtoToPut(itemId, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(1));
+
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> {
+            bookingService.create(bookingDto, bookerId);
+        });
+        assertEquals("Дата окончания должна быть позже даты начала", exception.getMessage());
+    }
+
+
+    @Test
+    void getBookingById_InvalidId_ThrowsNotFoundException() {
+
+        assertThrows(NotFoundException.class, () -> bookingService.getBookingById(999L, user.getId()));
+    }
+
+
+    @Test
+    void getBookings_All_ReturnsAllBookings() {
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.of(user));
+        when(bookingRepository.getAllByBookerId(user.getId())).thenReturn(List.of(booking));
+
+        List<BookingDto> result = bookingService.getBookings("ALL", user.getId());
+
+        assertEquals(1, result.size());
+        assertEquals(booking.getId(), result.get(0).getId());
+        verify(bookingRepository, times(1)).getAllByBookerId(user.getId());
+    }
+
+    @Test
+    void getBookings_Current_ReturnsCurrentBookings() {
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.of(user));
+        when(bookingRepository.getAllCurrentByUserId(user.getId())).thenReturn(List.of(booking));
+
+        List<BookingDto> result = bookingService.getBookings("CURRENT", user.getId());
+
+        assertEquals(1, result.size());
+        assertEquals(booking.getId(), result.get(0).getId());
+        verify(bookingRepository, times(1)).getAllCurrentByUserId(user.getId());
+    }
+
+    @Test
+    void getBookings_Past_ReturnsPastBookings() {
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.of(user));
+        when(bookingRepository.getAllPastByUserId(user.getId())).thenReturn(Collections.emptyList());
+
+        List<BookingDto> result = bookingService.getBookings("PAST", user.getId());
+
+        assertTrue(result.isEmpty());
+        verify(bookingRepository, times(1)).getAllPastByUserId(user.getId());
+    }
+
+    @Test
+    void getBookings_Future_ReturnsFutureBookings() {
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.of(user));
+        when(bookingRepository.getAllFutureByUserId(user.getId())).thenReturn(List.of(booking));
+
+        List<BookingDto> result = bookingService.getBookings("FUTURE", user.getId());
+
+        assertEquals(1, result.size());
+        assertEquals(booking.getId(), result.get(0).getId());
+        verify(bookingRepository, times(1)).getAllFutureByUserId(user.getId());
+    }
+
+    @Test
+    void getBookings_InvalidState_ThrowsNotFoundException() {
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.of(user));
+
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
+            bookingService.getBookings("INVALID_STATE", user.getId());
+        });
+
+        assertEquals("Не найден параметр INVALID_STATE", exception.getMessage());
+    }
+
+    @Test
+    void getBookings_UserDoesNotExist_ThrowsNotFoundException() {
+        when(userRepository.findById(user.getId())).thenReturn(java.util.Optional.empty());
+
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
+            bookingService.getBookings("ALL", user.getId());
+        });
+
+        assertEquals("Пользователь с id = 1 не найден.", exception.getMessage());
+    }
 }

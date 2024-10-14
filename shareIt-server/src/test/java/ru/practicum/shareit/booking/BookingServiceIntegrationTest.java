@@ -8,8 +8,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.server.booking.dto.BookingDto;
 import ru.practicum.shareit.server.booking.dto.BookingDtoToPut;
+
 import ru.practicum.shareit.server.booking.model.Status;
-import ru.practicum.shareit.server.booking.service.BookingService;
+import ru.practicum.shareit.server.booking.service.BookingServiceImpl;
 import ru.practicum.shareit.server.booking.storage.BookingRepository;
 import ru.practicum.shareit.server.exception.InvalidRequestException;
 import ru.practicum.shareit.server.exception.NotFoundException;
@@ -29,7 +30,8 @@ import java.util.List;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 
 @SpringBootTest
@@ -38,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class BookingServiceIntegrationTest {
 
     @Autowired
-    private BookingService bookingService;
+    private BookingServiceImpl bookingService;
 
     @Autowired
     private UserService userService;

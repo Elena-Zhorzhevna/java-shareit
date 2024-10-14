@@ -262,5 +262,4 @@ public class ItemServiceIntegrationTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Пользователь не является владельцем вещи!");
     }
-
 }
