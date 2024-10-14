@@ -22,7 +22,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
+/**
+ * Класс для тестирования UserController в модуле shareIt-gateway.
+ */
 @WebMvcTest(UserController.class)
 class UserControllerIntegrationTest {
 

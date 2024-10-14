@@ -1,6 +1,5 @@
 package ru.practicum.shareit.item;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,10 +13,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.client.MockRestServiceServer;
 import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
+/**
+ * Класс для тестирования методов ItemClient.
+ */
 @RestClientTest(ItemClient.class)
 class ItemClientTest {
     private final String serverUrl = "http://localhost:9090/items";
@@ -272,5 +275,4 @@ class ItemClientTest {
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
         assertNotNull(responseEntity.getBody());
     }
-
 }

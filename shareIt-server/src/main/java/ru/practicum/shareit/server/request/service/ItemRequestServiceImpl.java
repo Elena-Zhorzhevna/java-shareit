@@ -43,7 +43,8 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private final ItemRepository itemRepository;
 
     @Autowired
-    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository, UserRepository userRepository, UserService userService, ItemRepository itemRepository) {
+    public ItemRequestServiceImpl(ItemRequestRepository itemRequestRepository, UserRepository userRepository,
+                                  UserService userService, ItemRepository itemRepository) {
         this.itemRequestRepository = itemRequestRepository;
         this.userRepository = userRepository;
         this.userService = userService;
@@ -73,12 +74,11 @@ public class ItemRequestServiceImpl implements ItemRequestService {
      * @param itemRequestDto Запрос вещи в формате ДТО.
      * @return Добавленный запрос на вещь.
      */
-   @Override
+    @Override
     public ItemRequestDto addItemRequest(Long userId, ItemRequestDto itemRequestDto) {
         validateItemRequestDto(itemRequestDto);
         ItemRequest itemRequest = ItemRequestMapper.mapToItemRequest(itemRequestDto, itemRequestDto.getRequester());
         itemRequest.setCreated(LocalDateTime.now());
-        //itemRequest.setItems(itemRequestDto.getItems().stream().map(ItemMapper::mapItemNameDtoToItem).toList());
         itemRequest.setRequester(UserMapper.mapUserDtoToUser(userService.getUserById(userId)));
         if (userService.getUserById(userId) == null) {
             throw new NotFoundException("Пользователь с id " + userId + " не найден!");
@@ -89,45 +89,19 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         return addingItemRequest;
     }
 
-/*    @Override
-    public ItemRequestDto addItemRequest(Long userId, ItemRequestDto itemRequestDto) {
-        validateItemRequestDto(itemRequestDto);
-
-        // Сохраняем результат первого вызова
-        UserDto requesterDto = userService.getUserById(userId);
-        ItemRequest itemRequest = ItemRequestMapper.mapToItemRequest(itemRequestDto,
-                UserMapper.mapUserDtoToUser(requesterDto));
-        itemRequest.setCreated(LocalDateTime.now());
-        itemRequest.setRequester(UserMapper.mapUserDtoToUser(requesterDto));
-
-        ItemRequestDto addingItemRequest = ItemRequestMapper.mapToItemRequestDto(itemRequestRepository.save(itemRequest));
-        addingItemRequest.setItems(itemRequestDto.getItems());
-
-        return addingItemRequest;
-    }*/
-
- /*   @Override
+    @Override
     public ItemRequestDto getItemRequestById(Long itemRequestId, Long userId) {
+        if (itemRequestId == null) {
+            throw new NotFoundException("Запрос с id не может быть null.");
+        }
+
         log.info("Попытка получить запрос вещи с id = {}", itemRequestId);
 
         userService.getUserById(userId);
         ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId)
-                .orElseThrow(() -> new NotFoundException("Запрос с id = " + itemRequestId + "не найден!"));
+                .orElseThrow(() -> new NotFoundException("Запрос с id = " + itemRequestId + " не найден!"));
         return ItemRequestMapper.mapToItemRequestDto(itemRequest);
-    }*/
- @Override
- public ItemRequestDto getItemRequestById(Long itemRequestId, Long userId) {
-     if (itemRequestId == null) {
-         throw new NotFoundException("Запрос с id не может быть null.");
-     }
-
-     log.info("Попытка получить запрос вещи с id = {}", itemRequestId);
-
-     userService.getUserById(userId);
-     ItemRequest itemRequest = itemRequestRepository.findById(itemRequestId)
-             .orElseThrow(() -> new NotFoundException("Запрос с id = " + itemRequestId + " не найден!"));
-     return ItemRequestMapper.mapToItemRequestDto(itemRequest);
- }
+    }
 
 
     public List<ItemRequestDto> getAllRequests(Long userId, Integer pageNum, Integer pageSize) {

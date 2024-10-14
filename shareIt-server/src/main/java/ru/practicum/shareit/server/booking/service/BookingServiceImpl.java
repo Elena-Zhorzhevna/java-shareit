@@ -246,7 +246,7 @@ public class BookingServiceImpl implements BookingService {
     /**
      * Метод проверяет, является ли пользователь владельцем вещи.
      *
-     * @param itemId  Идентификатор вещи.
+     * @param itemId Идентификатор вещи.
      * @return true or false
      */
 
@@ -311,7 +311,6 @@ public class BookingServiceImpl implements BookingService {
     /**
      * Метод проверяет наличие статуса бронирования определенного пользователя.
      *
-
      * @param booking  Бронирование для проверки статуса.
      * @param approved Параметр, указывающий, подтверждено ли бронирование владельцем.
      */

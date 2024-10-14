@@ -17,6 +17,7 @@ import ru.practicum.shareit.booking.dto.BookingResponseDto;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -25,6 +26,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Класс для тестирования класса BookingController в модуле shareIt-gateway
+ */
 @WebMvcTest(BookingController.class)
 class BookingControllerIntegrationTest {
 
@@ -60,11 +64,11 @@ class BookingControllerIntegrationTest {
     @Test
     void bookItem_whenValidRequest_thenReturnStatusIsCreated() {
 
-        LocalDateTime start = LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS);;
-        LocalDateTime end = LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.SECONDS);;
+        LocalDateTime start = LocalDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS);
+        LocalDateTime end = LocalDateTime.now().plusDays(2).truncatedTo(ChronoUnit.SECONDS);
+
         BookingDto requestDto = new BookingDto(1L, start, end);
 
-        // Мокируем ответ контроллера
         when(bookingClient.createBooking(any(BookingDto.class), any(Long.class)))
                 .thenReturn(ResponseEntity.status(HttpStatus.CREATED).body(requestDto));
 
@@ -75,11 +79,11 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.itemId").value(1L))
-                .andExpect(jsonPath("$.start").value(start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
-                .andExpect(jsonPath("$.end").value(end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))));
-
+                .andExpect(jsonPath("$.start")
+                        .value(start.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
+                .andExpect(jsonPath("$.end")
+                        .value(end.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))));
     }
-
 
     @SneakyThrows
     @Test
@@ -96,7 +100,6 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.error").value("Ошибка валидации"));
-
     }
 
     @SneakyThrows
@@ -186,21 +189,6 @@ class BookingControllerIntegrationTest {
                 .andExpect(content().string("mocked bookings response"));
     }
 
-/*
-    @SneakyThrows
-    @Test
-    void getBookings_whenUnknownState_thenReturnBadRequest() {
-        long userId = 1L;
-
-        mockMvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", userId)
-                        .param("state", "unknown"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.error").value("Unknown state: unknown"));
-    }*/
-
-
     @SneakyThrows
     @Test
     void getAllBookingsByOwner_whenValidRequest_thenReturnBookings() {
@@ -216,22 +204,6 @@ class BookingControllerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("mocked owner bookings response"));
     }
-
-/*
-    @SneakyThrows
-    @Test
-    void getAllBookingsByOwner_whenUnknownState_thenReturnBadRequest() {
-        long userId = 1L;
-
-        mockMvc.perform(get("/bookings/owner")
-                        .header("X-Sharer-User-Id", userId)
-                        .param("state", "unknown"))
-                .andExpect(status().isBadRequest())
-                .andExpect(result ->
-                        assertTrue(result.getResolvedException() instanceof IllegalArgumentException));
-    }
-*/
-
 
     @SneakyThrows
     @Test

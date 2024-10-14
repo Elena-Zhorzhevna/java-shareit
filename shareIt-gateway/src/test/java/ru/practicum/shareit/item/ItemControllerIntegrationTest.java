@@ -45,7 +45,6 @@ class ItemControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(itemDto)))
-               // .andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("Item Name"));
@@ -81,24 +80,6 @@ class ItemControllerIntegrationTest {
                 .andExpect(jsonPath("$.name").value("Updated Item Name"));
     }
 
-/*
-    @SneakyThrows
-    @Test
-    void updateItem_whenItemNotFound_thenReturnStatusIsNotFound() {
-        ItemDto newItemDto = new ItemDto("Updated Item Name", "Updated Item Description", true);
-
-        when(itemClient.updateItem(eq(1L), eq(1L), any(ItemDto.class)))
-                .thenThrow(new InvalidRequestException("Item not found"));
-
-        mockMvc.perform(patch("/items/{itemId}", 1L)
-                        .header("X-Sharer-User-Id", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newItemDto)))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Item not found"));
-    }
-*/
-
     @SneakyThrows
     @Test
     void getAllItems_whenValidRequest_thenReturnStatusIsOk() {
@@ -124,7 +105,6 @@ class ItemControllerIntegrationTest {
 
         mockMvc.perform(get("/items/{itemId}", 1L)
                         .header("X-Sharer-User-Id", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.name").value("Item Name"));
@@ -139,7 +119,6 @@ class ItemControllerIntegrationTest {
 
         mockMvc.perform(get("/items/search?text=search text")
                         .header("X-Sharer-User-Id", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].name").value("Item Name"));
@@ -157,7 +136,6 @@ class ItemControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(commentDto)))
-                //.andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.text").value("Super item!"));

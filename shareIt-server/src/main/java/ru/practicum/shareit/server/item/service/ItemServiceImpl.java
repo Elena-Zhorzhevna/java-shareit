@@ -195,41 +195,6 @@ public class ItemServiceImpl implements ItemService {
         return newDto;
     }
 
-
-   /* @Override
-    public ItemDto updateItem(Long userId, Long itemId, ItemDto newItemDto) {
-
-*//*        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден."));
-
-        Item oldItem = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена!"));*//*
-
-        userRepository.findById(userId).orElseThrow(
-                () -> new NotFoundException("Пользователь с id = " + userId + " не найден."));
-
-        Item oldItem = (itemRepository.findById(itemId)).get();
-
-        if (!oldItem.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Пользователь не является владельцем вещи!");
-        }
-
-        if (newItemDto.getName() != null) {
-            oldItem.setName(newItemDto.getName());
-        }
-        if (newItemDto.getDescription() != null) {
-            oldItem.setDescription(newItemDto.getDescription());
-        }
-        if (newItemDto.getAvailable() != null) {
-            oldItem.setAvailable(newItemDto.getAvailable());
-        }
-
-        ItemDto newDto = ItemMapper.mapToItemDtoWithComments(itemRepository.save(oldItem));
-        List<CommentDto> commentDtos = getCommentsByItemId(newItemDto.getId());
-        newDto.setComments(commentDtos);
-        return newDto;
-    }*/
-
     /**
      * Удаление всех вещей пользователя с указанным идентификатором.
      *
@@ -271,7 +236,6 @@ public class ItemServiceImpl implements ItemService {
      * @param userId     Идентификатор пользователя.
      * @return Добавленный отзыв.
      */
-    //@Transactional
     @Override
     public CommentDto createComment(CommentDto commentDto, Long itemId, Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
@@ -365,8 +329,4 @@ public class ItemServiceImpl implements ItemService {
             throw new ValidationException("Бронирование вещи еще не завершено.");
         }
     }
-   /* private void checkBookingEndTime(List<Booking> booking) {
-        if (!booking.stream().anyMatch(booking1 -> booking1.getEnd().isBefore(LocalDateTime.now()))) {
-            throw new ValidationException("End time is after now time");
-        }*/
 }

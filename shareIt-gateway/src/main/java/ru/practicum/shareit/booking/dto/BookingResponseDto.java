@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingResponseDto {
-    private long id;         // ID бронирования
-    private long itemId;// ID предмета
+    private long id;
+    private long itemId;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm")
-    private LocalDateTime start; // Время начала
+    private LocalDateTime start;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm")
-    private LocalDateTime end;   // Время окончания
-    private boolean approved; // Статус одобрения
+    private LocalDateTime end;
+    private boolean approved;
 }

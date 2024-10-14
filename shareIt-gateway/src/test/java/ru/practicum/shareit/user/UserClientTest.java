@@ -17,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
+/**
+ * Класс для тестирования класса UserClient.
+ */
 @RestClientTest(UserClient.class)
 class UserClientTest {
     private final String serverUrl = "http://localhost:9090/users";

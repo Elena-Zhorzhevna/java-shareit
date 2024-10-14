@@ -17,6 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
+/**
+ * Класс для тестирования ItemRequestClient.
+ */
 @RestClientTest(ItemRequestClient.class)
 class ItemRequestClientTest {
     private final String serverUrl = "http://localhost:9090/requests";

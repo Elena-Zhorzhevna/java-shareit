@@ -20,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
+/**
+ * Класс для тестирования методов класса BookingClient
+ */
 @RestClientTest(BookingClient.class)
 class BookingClientTest {
     private final String serverUrl = "http://localhost:9090/bookings";
@@ -130,14 +133,11 @@ class BookingClientTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-    // Тесты на обработку ошибок
-
     @Test
     @SneakyThrows
     void createBooking_whenInvalid_thenReturnError() {
         Long userId = 1L;
 
-        // Устанавливаем некорректную дату окончания
         bookingDto.setEnd(LocalDateTime.now().minusHours(1));
 
         mockServer.expect(requestTo(serverUrl))
@@ -173,7 +173,6 @@ class BookingClientTest {
         Long userId = 1L;
         String unknownState = "UNKNOWN";
 
-        // Теперь мы ожидаем IllegalArgumentException при попытке получить состояние из UNKNOWN
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
             BookingState.from(unknownState).orElseThrow(() ->
                     new IllegalArgumentException("Unknown state: " + unknownState));

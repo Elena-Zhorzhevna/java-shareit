@@ -21,6 +21,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Класс для тестирования ItemRequestController в модуле shareIt-gateway
+ */
 @WebMvcTest(ItemRequestController.class)
 class ItemRequestControllerIntegrationTest {
 
@@ -45,7 +48,6 @@ class ItemRequestControllerIntegrationTest {
                         .header("X-Sharer-User-Id", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(itemRequestDto)))
-                //.andDo(print())
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value("Request Description"));
@@ -61,7 +63,6 @@ class ItemRequestControllerIntegrationTest {
 
         mockMvc.perform(get("/requests")
                         .header("X-Sharer-User-Id", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].description").value("Request Description"));
@@ -77,7 +78,6 @@ class ItemRequestControllerIntegrationTest {
 
         mockMvc.perform(get("/requests/all")
                         .header("X-Sharer-User-Id", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].description").value("Other User Request"));
@@ -93,7 +93,6 @@ class ItemRequestControllerIntegrationTest {
 
         mockMvc.perform(get("/requests/{requestId}", 1L)
                         .header("X-Sharer-User-Id", 1L))
-                //.andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.description").value("Request Description"));
